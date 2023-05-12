@@ -19,7 +19,7 @@
 <p>13）、help : 帮助。</p>
 <p>14）、exit : 退出。</p>
 <p>15）、# : 注释</p>
-<h1 id="git原理"><a href="#git原理" class="headerlink" title="git原理"></a>git原理</h1><p><img src="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/git_1.png" alt="image"></p>
+<h1 id="git原理"><a href="#git原理" class="headerlink" title="git原理"></a>git原理</h1><p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/git_1.png" alt="image"></p>
 <blockquote>
 <p>在git中的输入的命令实际上跟linux是一样的</p>
 </blockquote>
@@ -27,7 +27,7 @@
 <p>区域分为git本地区域与remote远端仓库</p>
 </blockquote>
 <h3 id="整体有四个区域"><a href="#整体有四个区域" class="headerlink" title="整体有四个区域"></a>整体有四个区域</h3><p><strong>工作区（即Workspace）</strong> 工作区，就是你平时存放项目代码的地方, 就是指 <em>我们在本地编辑代码的地方</em><br><strong>暂存区（即Index&#x2F;Stage）</strong> 暂存区，用于临时存放你的改动，事实上它只是一个文件，保存即将提交到文件列表信息, 是 <em>为了防止误操作而建立的一个区</em><br><strong>本地库（即Repository）</strong> 仓库区（或本地仓库），就是安全存放数据的位置，这里面有你提交到所有版本的数据。其中HEAD指向最新放入仓库的版本, 是 <em>用于管理历史版本的区域</em><br><strong>远程仓库（即Remote）</strong> 远程仓库，托管代码的服务器，可以简单的认为是你项目组中的一台电脑用于远程数据交换, 是 <em>放置在远端的协作库（即github或gitee上的远程库）</em></p>
-<h3 id="本地有三个区域"><a href="#本地有三个区域" class="headerlink" title="本地有三个区域"></a>本地有三个区域</h3><p>git本地的三个区域确切的说应该是指：git仓库中HEAD指向的版本（状态）的意思：<br><img src="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/git_2.png" alt="image"></p>
+<h3 id="本地有三个区域"><a href="#本地有三个区域" class="headerlink" title="本地有三个区域"></a>本地有三个区域</h3><p>git本地的三个区域确切的说应该是指：git仓库中HEAD指向的版本（状态）的意思：<br><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/git_2.png" alt="image"></p>
 <p>（Directory：使用Git管理的一个目录，也就是一个仓库，包含我们的工作空间和Git的管理空间。）</p>
 <p><strong>WorkSpace</strong>：需要通过Git进行版本控制的目录和文件，这些目录和文件组成了工作空间。</p>
 <p>（.git：存放Git管理信息的目录，初始化仓库的时候自动创建。）</p>
@@ -37,7 +37,7 @@
 <h1 id="git本地操作"><a href="#git本地操作" class="headerlink" title="git本地操作"></a>git本地操作</h1><h2 id="git本地工作流程"><a href="#git本地工作流程" class="headerlink" title="git本地工作流程"></a>git本地工作流程</h2><blockquote>
 <p>git在本地工作流程一般是这样的：<br>１、在工作目录中添加、修改文件；<br>２、将需要进行版本管理的文件放入暂存区域；<br>３、将暂存区域的文件提交到git仓库。</p>
 </blockquote>
-<p><strong>因此，git管理的文件有三种状态：已修改（modified）,已暂存（staged）,已提交(committed)</strong><br><img src="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/git_3.png" alt="image"></p>
+<p><strong>因此，git管理的文件有三种状态：已修改（modified）,已暂存（staged）,已提交(committed)</strong><br><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/git_3.png" alt="image"></p>
 <h2 id="文件在本地的四种状态"><a href="#文件在本地的四种状态" class="headerlink" title="文件在本地的四种状态"></a>文件在本地的四种状态</h2><blockquote>
 <p>版本控制就是对文件的版本控制，要对文件进行修改、提交等操作，首先要知道文件当前在什么状态，不然可能会提交了现在还不想提交的文件，或者要提交的文件没提交上的情况。</p>
 </blockquote>
@@ -51,11 +51,11 @@
 <blockquote>
 <p>git add （工作区 -&gt; 暂存区）<br>git commit （暂存区 -&gt; 本地库）</p>
 </blockquote>
-<p>而在使用 <code>ls</code> 命令查看git文件夹时，<br>前缀为<code>d</code>的为文件夹<br>前缀为<code>-</code>的则为文件<br>如下图所示：<br><img src="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/git_4.png" alt="image"></p>
+<p>而在使用 <code>ls</code> 命令查看git文件夹时，<br>前缀为<code>d</code>的为文件夹<br>前缀为<code>-</code>的则为文件<br>如下图所示：<br><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/git_4.png" alt="image"></p>
 <blockquote>
 <p>上图中 前几项就全部都为文件夹，而后面的几项就全都为文件</p>
 </blockquote>
-<h2 id="git在本地的版本控制"><a href="#git在本地的版本控制" class="headerlink" title="git在本地的版本控制"></a>git在本地的版本控制</h2><p><img src="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/git_5.png" alt="image"></p>
+<h2 id="git在本地的版本控制"><a href="#git在本地的版本控制" class="headerlink" title="git在本地的版本控制"></a>git在本地的版本控制</h2><p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/git_5.png" alt="image"></p>
 <blockquote>
 <p>不放在本地仓库中的文件，git不进行管理<br>必须通过add，commit操作才能将内容提交到本地仓库</p>
 </blockquote>
@@ -96,7 +96,7 @@
 <blockquote>
 <p>hard最常用，除此之外：还有以下两种方式，在此不再叙述。</p>
 </blockquote>
-<h5 id="mixed"><a href="#mixed" class="headerlink" title="- -mixed"></a>- -mixed</h5><h5 id="soft"><a href="#soft" class="headerlink" title="- -soft"></a>- -soft</h5><h2 id="本地分支的概念"><a href="#本地分支的概念" class="headerlink" title="本地分支的概念"></a>本地分支的概念</h2><p><img src="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/git_6.png" alt="image"><br>分支：能够让一个项目在开发主要功能(主分支master)的同时，能够复制主分支的内容以形成新的功能开发的目的，且不污染主分支。</p>
+<h5 id="mixed"><a href="#mixed" class="headerlink" title="- -mixed"></a>- -mixed</h5><h5 id="soft"><a href="#soft" class="headerlink" title="- -soft"></a>- -soft</h5><h2 id="本地分支的概念"><a href="#本地分支的概念" class="headerlink" title="本地分支的概念"></a>本地分支的概念</h2><p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/git_6.png" alt="image"><br>分支：能够让一个项目在开发主要功能(主分支master)的同时，能够复制主分支的内容以形成新的功能开发的目的，且不污染主分支。</p>
 <blockquote>
 <p>ps：菜鸟程序员在分支上写的代码不会污染到主分支上的大佬写的代码😂 </p>
 </blockquote>
@@ -219,8 +219,10 @@
     <title>test</title>
     <url>/leiblog/2023/02/28/test/</url>
     <content><![CDATA[<p>这是一个测试<span id="more"></span>，用于测试是否能够使用more以及文章自动push</p>
-<p>测试图片：</p>
+<p>测试本地目录下图片：</p>
 <p><img src="/leiblog/thunderstorm2018/2023/02/28/test/Blog\LEI\source_posts\test\lei.jpg" alt="lei"></p>
+<p>测试图床照片：</p>
+<p><img src="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/lei.jpg" alt="lei"></p>
 ]]></content>
       <tags>
         <tag>test</tag>
@@ -1419,7 +1421,7 @@
 </li>
 <li><p>BigDecimal(String)</p>
 <p>创建一个具有参数所指定以字符串表示的数值的对象</p>
-<p><img src="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/BigDecimal.png" alt="BigDecimal"></p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/BigDecimal.png" alt="BigDecimal"></p>
 <blockquote>
 <p>与其他构造方法相比，String 构造方法是完全可预知的：写入 newBigDecimal(“0.1”) 将创建一个 BigDecimal，它正好等于预期的 0.1。因此，比较而言， 通常建议<strong>优先使用String构造方法</strong>。</p>
 </blockquote>
@@ -1464,7 +1466,7 @@
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> java.text.*;<span class="comment">//不要忘记导入包</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">NumberFormat</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] s)</span>&#123;</span><br><span class="line">        System.out.println(formatToNumber(<span class="keyword">new</span> <span class="title class_">BigDecimal</span>(<span class="string">&quot;3.435&quot;</span>)));</span><br><span class="line">        System.out.println(formatToNumber(<span class="keyword">new</span> <span class="title class_">BigDecimal</span>(<span class="number">0</span>)));</span><br><span class="line">        System.out.println(formatToNumber(<span class="keyword">new</span> <span class="title class_">BigDecimal</span>(<span class="string">&quot;0.00&quot;</span>)));</span><br><span class="line">        System.out.println(formatToNumber(<span class="keyword">new</span> <span class="title class_">BigDecimal</span>(<span class="string">&quot;0.001&quot;</span>)));</span><br><span class="line">        System.out.println(formatToNumber(<span class="keyword">new</span> <span class="title class_">BigDecimal</span>(<span class="string">&quot;0.006&quot;</span>)));</span><br><span class="line">        System.out.println(formatToNumber(<span class="keyword">new</span> <span class="title class_">BigDecimal</span>(<span class="string">&quot;0.206&quot;</span>)));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@desc</span> 1.0~1之间的BigDecimal小数，格式化后失去前面的0,则前面直接加上0。</span></span><br><span class="line"><span class="comment">     * 2.传入的参数等于0，则直接返回字符串&quot;0.00&quot;</span></span><br><span class="line"><span class="comment">     * 3.大于1的小数，直接格式化返回字符串</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> obj传入的小数</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> String <span class="title function_">formatToNumber</span><span class="params">(BigDecimal obj)</span> &#123;</span><br><span class="line">        <span class="comment">//在此处传入的都是BigDecimal型变量，保证了准确性</span></span><br><span class="line">        <span class="type">DecimalFormat</span> <span class="variable">df</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">DecimalFormat</span>(<span class="string">&quot;#.00&quot;</span>);</span><br><span class="line">        <span class="comment">//等于0时：</span></span><br><span class="line">        <span class="keyword">if</span>(obj.compareTo(BigDecimal.ZERO)==<span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;0.00&quot;</span>;</span><br><span class="line">        &#125;<span class="keyword">else</span> <span class="keyword">if</span>(obj.compareTo(BigDecimal.ZERO)&gt;<span class="number">0</span>&amp;&amp;obj.compareTo(<span class="keyword">new</span> <span class="title class_">BigDecimal</span>(<span class="number">1</span>))&lt;<span class="number">0</span>)&#123;</span><br><span class="line">            <span class="comment">//大于0小于1时：</span></span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;0&quot;</span>+df.format(obj).toString();</span><br><span class="line">        &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">//大于等于1时：</span></span><br><span class="line">            <span class="keyword">return</span> df.format(obj).toString();</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>转换回基本类型：</p>
 <p>parse( )方法：本质上就是将返回的String转换为（基本数字类型）数字类Number</p>
-<p><img src="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/parse.png" alt="parse"></p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/parse.png" alt="parse"></p>
 <h5 id="求最大公约数"><a href="#求最大公约数" class="headerlink" title="求最大公约数"></a>求最大公约数</h5><p>用法：</p>
 <blockquote>
 <p>①利用大数<strong>BigInteger</strong>中的方法 gcd( )</p>
@@ -1513,7 +1515,7 @@
 <p> <code>Arrays.fill(dp, 1);</code></p>
 <h4 id="需要明晰的知识"><a href="#需要明晰的知识" class="headerlink" title="需要明晰的知识"></a>需要明晰的知识</h4><h5 id="int-与char转换"><a href="#int-与char转换" class="headerlink" title="int 与char转换"></a>int 与char转换</h5><p>重点在ascii码的运用上：</p>
 <p><em>附大小写字母及基本字符的十进制ascii码对应表如下</em></p>
-<p><img src="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/ascii.png"></p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/ascii.png"></p>
 <p>着重记忆：A–65  a–97</p>
 <ul>
 <li><p>char 转 int</p>
@@ -1553,7 +1555,7 @@
 <td>Double</td>
 </tr>
 </tbody></table>
-<p><img src="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/parse.png" alt="parse"></p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/parse.png" alt="parse"></p>
 </li>
 <li><p>valueOf()</p>
 <p>用于如：Integer.valueOf() 是把 <u>String类型</u> 转化为Integer类型(注意：是Integer类型，而不是int类型，int类型是表示数字的简单类型，Integer类型是一个引用的复杂类型)</p>
@@ -1620,7 +1622,7 @@
 <p>使用： int ma &#x3D; Integer.MIN_VALUE;</p>
 </blockquote>
 <h5 id="集合"><a href="#集合" class="headerlink" title="集合"></a>集合</h5><p>在使用时要注意以下问题：</p>
-<p><img src="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/arrays.png" alt="基础类型数据引用类型"></p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/arrays.png" alt="基础类型数据引用类型"></p>
 <p>集合是java中提供的一种容器，可以用来存储多个数据。</p>
 <p>集合和数组既然都是容器，但是：</p>
 <ul>
@@ -1754,13 +1756,13 @@
 <p>取决于问题的性质：求出f(n)，只需要知道几个更小的f(c)。<strong>我们将求解f(c)称作求解f(n)的“子问题”。</strong></p>
 <p>　　<strong>这就是DP</strong>（即：<strong>动态规划</strong>，dynamic programming）.</p>
 <p>　　<strong>将一个问题拆成几个子问题，分别求解这些子问题，即可推断出大问题的解</strong>。</p>
-<h5 id="质因数分解结论"><a href="#质因数分解结论" class="headerlink" title="质因数分解结论"></a>质因数分解结论</h5><p><img src="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/normal.png" alt="normal"></p>
+<h5 id="质因数分解结论"><a href="#质因数分解结论" class="headerlink" title="质因数分解结论"></a>质因数分解结论</h5><p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/normal.png" alt="normal"></p>
 <blockquote>
 <p>上面的基本结论可以得出快速分解出一个数的所有可能的因数的方法：</p>
 <p>如：36的所有因数（除1和它本身外）就是2和3的所有排列组合后的结果，即6</p>
 </blockquote>
 <p><strong>同时，就可以推出该结论（得到某数的因数的个数）：</strong></p>
-<p><img src="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/cnt.png" alt="cnt"></p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/cnt.png" alt="cnt"></p>
 <p>从而：我们也可以得出一个结论，就是所有的数都可以被分解质因数为：2，3，5，7这四个数字的 0-n 次方（即指数可以为0-n） 之和。</p>
 <p>且由第二个结论可知：因数个数为（各指数+1）之积</p>
 <h4 id="题记"><a href="#题记" class="headerlink" title="题记"></a>题记</h4><h5 id="题记【二进制中1的个数】-2022-12-6"><a href="#题记【二进制中1的个数】-2022-12-6" class="headerlink" title="题记【二进制中1的个数】(2022.12.6)"></a>题记【二进制中1的个数】(2022.12.6)</h5><p><a href="https://www.acwing.com/problem/content/803/">801. 二进制中1的个数 - AcWing题库</a></p>
@@ -2012,15 +2014,5 @@
 
 <p>更多信息见: <a href="https://www.cnblogs.com/ThunderLEI">博客园时期记录文章</a></p>
 ]]></content>
-  </entry>
-  <entry>
-    <title>测试博客</title>
-    <url>/leiblog/2022/11/24/%E6%B5%8B%E8%AF%95%E5%8D%9A%E5%AE%A2/</url>
-    <content><![CDATA[<h1 id="测试信息"><a href="#测试信息" class="headerlink" title="测试信息"></a>测试信息</h1><p>雷樱者</p>
-<p><a href="https://tosuke-1311390847.cos.ap-chengdu.myqcloud.com/lei.jpg">测试图片</a></p>
-<h2 id="第一段"><a href="#第一段" class="headerlink" title="第一段"></a><em><strong>第一段</strong></em></h2>]]></content>
-      <tags>
-        <tag>test</tag>
-      </tags>
   </entry>
 </search>
