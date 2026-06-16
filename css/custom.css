@@ -1,0 +1,170 @@
+/* Global polish for homepage cards and personal pages */
+:root {
+  --lei-accent: #4c6fff;
+  --lei-accent-soft: rgba(76, 111, 255, 0.12);
+  --lei-surface-soft: rgba(255, 255, 255, 0.72);
+  --lei-border-soft: rgba(76, 111, 255, 0.12);
+}
+
+#recent-posts > .recent-post-item,
+.layout > div:first-child:not(.recent-posts),
+#aside-content .card-widget {
+  border: 1px solid var(--lei-border-soft);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+}
+
+#recent-posts > .recent-post-item {
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(247, 250, 255, 0.92));
+}
+
+#recent-posts > .recent-post-item .post_cover {
+  width: 41%;
+}
+
+#recent-posts > .recent-post-item .post_cover img.post_bg {
+  transition: transform 0.45s ease, filter 0.35s ease;
+  filter: saturate(1.02);
+}
+
+#recent-posts > .recent-post-item > .recent-post-info {
+  width: 59%;
+  padding: 0 42px;
+}
+
+#recent-posts > .recent-post-item > .recent-post-info > .article-title {
+  font-size: 1.78em;
+  letter-spacing: 0.01em;
+}
+
+#recent-posts > .recent-post-item > .recent-post-info > .article-meta-wrap {
+  margin: 10px 0 14px;
+  line-height: 1.9;
+}
+
+#recent-posts > .recent-post-item > .recent-post-info > .content {
+  color: rgba(60, 72, 88, 0.88);
+  line-height: 1.9;
+  -webkit-line-clamp: 3;
+}
+
+#aside-content .card-widget {
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(249, 251, 255, 0.94));
+}
+
+#aside-content .card-info .author-info__description {
+  margin-top: 0.2rem;
+  line-height: 1.8;
+  color: rgba(60, 72, 88, 0.8);
+}
+
+#aside-content .card-info #card-info-btn {
+  border-radius: 999px;
+  background: linear-gradient(135deg, #5d7bff, #6aa8ff);
+  box-shadow: 0 10px 22px rgba(76, 111, 255, 0.24);
+}
+
+#aside-content .card-info #card-info-btn:hover {
+  transform: translateY(-1px);
+}
+
+.about-page,
+.resume-page {
+  color: var(--font-color);
+}
+
+.about-page .page-intro,
+.resume-page .page-intro,
+.resume-page .resume-contact,
+.resume-page .resume-grid > div,
+.about-page .focus-grid > div,
+.about-page .writing-grid > div {
+  border: 1px solid var(--lei-border-soft);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(76, 111, 255, 0.09), rgba(90, 200, 250, 0.06));
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+.about-page .page-intro,
+.resume-page .page-intro {
+  margin: 1.2rem 0 1.8rem;
+  padding: 1.25rem 1.4rem;
+  line-height: 1.95;
+}
+
+.about-page .focus-grid,
+.about-page .writing-grid,
+.resume-page .resume-grid,
+.resume-page .contact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.about-page .focus-grid > div,
+.about-page .writing-grid > div,
+.resume-page .resume-grid > div,
+.resume-page .resume-contact {
+  padding: 1rem 1.15rem;
+}
+
+.about-page h2,
+.resume-page h2 {
+  margin-top: 2rem;
+}
+
+.about-page h3,
+.resume-page h3 {
+  margin-top: 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.about-page ul,
+.resume-page ul {
+  padding-left: 1.2rem;
+}
+
+.about-page li,
+.resume-page li {
+  margin: 0.45rem 0;
+  line-height: 1.85;
+}
+
+.resume-page .resume-contact {
+  margin: 1.2rem 0 1.8rem;
+}
+
+.resume-page .contact-grid {
+  margin: 0.8rem 0 0;
+}
+
+.resume-page .contact-grid a {
+  font-weight: 500;
+}
+
+.resume-page .resume-grid strong,
+.about-page .focus-grid strong,
+.about-page .writing-grid strong {
+  display: inline-block;
+  margin-bottom: 0.45rem;
+  color: var(--text-highlight-color);
+}
+
+@media screen and (max-width: 768px) {
+  #recent-posts > .recent-post-item {
+    border-radius: 18px;
+  }
+
+  #recent-posts > .recent-post-item > .recent-post-info {
+    padding: 22px 20px 28px;
+  }
+
+  .about-page .focus-grid,
+  .about-page .writing-grid,
+  .resume-page .resume-grid,
+  .resume-page .contact-grid {
+    grid-template-columns: 1fr;
+  }
+}
