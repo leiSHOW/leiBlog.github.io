@@ -138,7 +138,7 @@
 </li>
 <li><p>(HEAD -&gt; master, origin&#x2F;master, origin&#x2F;HEAD)  </p>
 <ul>
-<li>HEAD -&gt; master: 表示此提交是本地master分支的末端</li>
+<li>HEAD -&gt; master: 表示此提交是<strong>本地master分支</strong>的末端</li>
 <li><strong>origin&#x2F;master: 表示此提交也是远程origin仓库的master分支末端</strong></li>
 <li><strong>origin&#x2F;HEAD: 表示此提交也是远程origin仓库的HEAD所指向的提交(通常为master分支末端)【远程仓库默认指向master分支】</strong></li>
 </ul>
@@ -164,7 +164,16 @@
   <entry>
     <title>用STM32完成一个毕业设计</title>
     <url>/leiblog/2024/02/21/%E7%94%A8STM32%E5%AE%8C%E6%88%90%E4%B8%80%E4%B8%AA%E6%AF%95%E4%B8%9A%E8%AE%BE%E8%AE%A1/</url>
-    <content><![CDATA[<h1 id="初识STM32"><a href="#初识STM32" class="headerlink" title="初识STM32"></a>初识STM32</h1><h2 id="结构信息"><a href="#结构信息" class="headerlink" title="结构信息"></a>结构信息</h2><p>首先，我们需要知道，计算机有：</p>
+    <content><![CDATA[<blockquote>
+<p>一些命令：</p>
+<p>F7 – 编译</p>
+<p>F8 – 烧录</p>
+</blockquote>
+<blockquote>
+<p>一些英文缩写：</p>
+<p>NMI：不可屏蔽</p>
+</blockquote>
+<h1 id="初识STM32"><a href="#初识STM32" class="headerlink" title="初识STM32"></a>初识STM32</h1><h2 id="结构信息"><a href="#结构信息" class="headerlink" title="结构信息"></a>结构信息</h2><p>首先，我们需要知道，计算机有：</p>
 <ul>
 <li><p>CISC（复杂指令集）</p>
 </li>
@@ -184,7 +193,7 @@
 <blockquote>
 <p>MCU是单片机方向，MPU是Linux方向</p>
 </blockquote>
-<p>本次使用的型号为：STM32F103ZET6【内核：Cortex-M3】</p>
+<p>本次使用的型号为：<em><strong>STM32F103ZET6</strong></em>【内核：Cortex-M3】</p>
 <h2 id="最小系统"><a href="#最小系统" class="headerlink" title="最小系统"></a>最小系统</h2><p>最小系统即：保证MCU正常工作的最小电路组成单元</p>
 <p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240317154655304.png" alt="122"></p>
 <blockquote>
@@ -195,15 +204,66 @@
 <p>本单片机所采用的 <strong>Cortex-M3芯片及调试系统</strong> 是由ARM公司设计</p>
 <p>而其他部分（外设、存储器、时钟和复位、I&#x2F;O）则由其他芯片制造商（ST公司、APM公司等）设计开发</p>
 </blockquote>
+<h3 id="时钟系统"><a href="#时钟系统" class="headerlink" title="时钟系统"></a>时钟系统</h3><h4 id="时钟参考图"><a href="#时钟参考图" class="headerlink" title="时钟参考图"></a>时钟参考图</h4><p>先在此附带一张STM32F103的时钟图：</p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240424163759501.png" alt="image-20240424163759501"></p>
+<h5 id="各时钟的区别"><a href="#各时钟的区别" class="headerlink" title="各时钟的区别"></a>各时钟的区别</h5><blockquote>
+<p>  FCLK是提供给ARM的时钟。<br>          HCLK 是提供给用于 ARM，存储器控制器，中断控制器，LCD 控制器，DMA 和 USB 主机模块的 AHB总线的时钟。<br>          PCLK 是提供给用于外设如WDT，IIS，I2C，PWM 定时器，MMC&#x2F;SD 接口，ADC，UART，GPIO，RTC 和SPI的 APB 总线的时钟。 </p>
+</blockquote>
+<ul>
+<li><p>稳定性：外部振荡器是更加稳定的【精度更高】，所以我们一般均首选HSE、LSE</p>
+</li>
+<li><p>功能性：HSE、HSI能够作为系统时钟，但优先选择HSE； </p>
+<p>并且经过分频之后，能够作为 AHB的时钟 和 APB的时钟【不同APB就对应地接到不同的外设】</p>
+</li>
+<li><p>能否作为内部时钟【内核时钟】：HSE、HSI能够通过一系列选择、分频做到</p>
+</li>
+<li><p>能够作为外设时钟：外设指的是在图中的存储器、DMA、ADC等</p>
+</li>
+</ul>
+<h5 id="MCO"><a href="#MCO" class="headerlink" title="MCO"></a>MCO</h5><blockquote>
+<p>STM32对外部输出时钟信号的端口</p>
+</blockquote>
+<p>在此处，由 <code>PA8</code> 引脚复用后得到该功能，时钟信号可以来源于图中的四个信号源</p>
+<h4 id="时钟系统简要分析"><a href="#时钟系统简要分析" class="headerlink" title="时钟系统简要分析"></a>时钟系统简要分析</h4><p>先看上图是很难理解的，我们先来分析如下STM32F103时钟树的简图：</p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240424162540194.png" alt="image-20240424162540194"></p>
+<h5 id="高速部分"><a href="#高速部分" class="headerlink" title="高速部分"></a>高速部分</h5><ul>
+<li><p>HSE：高速外部振荡器，外部接入，即：外部晶振实现的</p>
+</li>
+<li><p>HSI：高速内部振荡器，内部接入</p>
+</li>
+<li><p>PLL：锁相环</p>
+</li>
+<li><p>SYSCLK：系统时钟</p>
+</li>
+<li><p>AHB：高速高性能总线</p>
+</li>
+<li><p>HCLK：AHB的时钟</p>
+</li>
+<li><p>APB：高速外设总线</p>
+</li>
+</ul>
+<h5 id="低速部分"><a href="#低速部分" class="headerlink" title="低速部分"></a>低速部分</h5><ul>
+<li>LSI：内部低速振荡器，内部接入</li>
+<li>LSE：外部低速振荡器，外部接入，即：外部晶振实现的</li>
+<li>IWDG：独立看门狗</li>
+<li>RTC：实时时钟外设（计时器）</li>
+</ul>
+<h5 id="HAL库驱动程序"><a href="#HAL库驱动程序" class="headerlink" title="HAL库驱动程序"></a>HAL库驱动程序</h5><p> 见上图，在此不深究</p>
+<h4 id="STM32CubeMX时钟树图"><a href="#STM32CubeMX时钟树图" class="headerlink" title="STM32CubeMX时钟树图"></a>STM32CubeMX时钟树图</h4><blockquote>
+<p>实际运用中，此图最重要，通过看懂该图就可以实现通过 <code>STM32CubeMx</code> 视图界面对<strong>MCU时钟</strong>进行配置</p>
+</blockquote>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240424171747792.png" alt="image-20240424171747792"></p>
 <h2 id="系统结构"><a href="#系统结构" class="headerlink" title="系统结构"></a>系统结构</h2><p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240318153351242.png" alt="image-20240318153351242"></p>
 <p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240318152740624.png" alt="image-20240318152740624"></p>
 <h2 id="存储器划分"><a href="#存储器划分" class="headerlink" title="存储器划分"></a>存储器划分</h2><h3 id="总体划分"><a href="#总体划分" class="headerlink" title="总体划分"></a>总体划分</h3><p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240318154825886.png" alt="image-20240318154825886"></p>
 <h3 id="功能划分"><a href="#功能划分" class="headerlink" title="功能划分"></a>功能划分</h3><p>每一个Block的 <strong>具体功能和地址范围</strong> 参考开发板资料</p>
-<h1 id="STM32CubeIDE使用"><a href="#STM32CubeIDE使用" class="headerlink" title="STM32CubeIDE使用"></a>STM32CubeIDE使用</h1><h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>ST公司推出的代码编辑器，并且集成了STM32CubeMx工具，含有视图操作界面，能更好地对指定的MCU进行操作。</p>
+<h1 id="STM32CubeIDE-x2F-STM32CubeMX使用"><a href="#STM32CubeIDE-x2F-STM32CubeMX使用" class="headerlink" title="STM32CubeIDE&#x2F;STM32CubeMX使用"></a>STM32CubeIDE&#x2F;STM32CubeMX使用</h1><h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>ST公司推出的代码编辑器STM32CubeIDE，集成了STM32CubeMx工具，含有视图操作界面，能更好地对指定的MCU进行操作。</p>
 <blockquote>
-<p>①为什么不使用Keil？</p>
-<p>虽然能够通过下载STM32CubeMx工具先对MCU进行操作之后，导出文件，再在Keil中进行代码编写，但是还是不够方便，使用STM32CubeIDE就能直接一站式服务全部解决。</p>
-<p>②为什么需要STM32CubeMx工具来生成代码之后再来进行代码编写？</p>
+<p>①为什么不选择直接使用Keil？</p>
+<p>因为使用ST公司推出的视图操作工具STM32CubeMx可以很方便地对MCU的GPIO、时钟等进行配置。</p>
+<p>②如何才能MCU进行操作？</p>
+<p>可以通过下载STM32CubeMx工具先对MCU进行操作之后，导出文件，再在Keil中进行代码编写，但是也可以直接使用STM32CubeIDE就能直接一站式服务全部解决。</p>
+<p>③为什么需要STM32CubeMx工具来生成代码之后再来进行代码编写？</p>
 <p>STM32单片机相比起51单片机，内部结构复杂很多，因此直接对底层寄存器编码，相对复杂，这个需要我们了解芯片手册，对于复杂项目，这些操作可能需要反复编写，因此出现了标准库的方式，对寄存器操作进行了封装，操作相对简单。随着项目复杂度提升，又出现了封装更厉害的一种库HAL，而这个需要借助STM32CubeMx工具来生成代码。</p>
 </blockquote>
 <h2 id="常用快捷键"><a href="#常用快捷键" class="headerlink" title="常用快捷键"></a>常用快捷键</h2><table>
@@ -302,6 +362,396 @@
 </tr>
 </tbody></table>
 <p>（也可用ST官方的工具 <code>STM32CubeProgrammer</code>进行烧录 ）</p>
+<h1 id="功能设计"><a href="#功能设计" class="headerlink" title="功能设计"></a>功能设计</h1><blockquote>
+<p>整个模块中各硬件之间所使用的通信协议：</p>
+<ul>
+<li>与TFTLCD显示模块：USART协议</li>
+<li>与ESP8266通信模块：IIC协议</li>
+</ul>
+</blockquote>
+<h2 id="控制模块"><a href="#控制模块" class="headerlink" title="控制模块"></a>控制模块</h2><blockquote>
+<p>控制方式分为三种：远程app控制、红外遥控控制、按键控制</p>
+<p>其中前两种控制方式占主导，能提供所有功能的控制，按键控制仅用于开关机、reset等系统级功能</p>
+</blockquote>
+<p>大致通信逻辑图如下：</p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/%E6%8E%A7%E5%88%B6%E6%B5%81%E7%A8%8B%E5%9B%BE.png" alt="控制流程图"></p>
+<h3 id="远程app控制"><a href="#远程app控制" class="headerlink" title="远程app控制"></a>远程app控制</h3><p>使用机智云平台在<strong>云端平台</strong>上构建起一套功能响应逻辑，在ESP8266上烧写GAgent固件从而建立起固定的通信方式，以返回实体系统端的操作控制请求。</p>
+<blockquote>
+<p>wifi模块采用的配网方式：airlink</p>
+</blockquote>
+<p>烧录GAgent固件与机智云平台进行通信，这里给出两篇文章来给出参考：<a href="https://blog.csdn.net/gizwits_csdn/article/details/123996759">ESP8266-01S接入机智云物联网平台_esp8266机智云配网-CSDN博客</a>、<a href="https://docs.gizwits.com/zh-cn/deviceDev/ESP8266%E4%B8%B2%E5%8F%A3%E7%83%A7%E5%86%99%E8%AF%B4%E6%98%8E.html#5-%E7%83%A7%E5%86%99%E6%93%8D%E4%BD%9C">官方串口烧写说明</a>【在此处推荐使用MCU烧写方式(combine固件烧写)】</p>
+<blockquote>
+<p>这个地方也算是一个大坑了，如果第一次经历烧写此芯片，那估计得多倒腾几天了，一般来说是需要购买专门的烧写器的，因为读了ESP8266的使用文档之后就会知道：两种模式的转换需要有一个接口接地的操作才能上电同步，即才能进入烧写模式，不然一直都会处于平常的运行模式，导致烧写失败。</p>
+<p>以及一定要记得把IO_0接地。。。。</p>
+</blockquote>
+<p>烧写完成之后可以通过  <strong>机智云串口调试助手</strong> 模拟MCU来进行验证 <em>该模块和机智云服务器的通信是否OK</em></p>
+<p>如下图所示时，则代表已经配网成功：</p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240422172042154.png" alt="配网成功"></p>
+<p>如果配网失败，可以参考这篇文章进行检查：<a href="https://docs.gizwits.com/zh-cn/deviceDev/Onboarding.html#4%E3%80%81%E4%BD%BF%E7%94%A8%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%BA%E6%99%BA%E4%BA%91demo-APP%E8%BF%9B%E8%A1%8C%E9%85%8D%E7%BD%91">使用最新版机智云demo-APP进行配网</a></p>
+<p>之后再在代码中对GAgent模块的通信进行控制，经历：打开AirLink连接模式 –&gt;手机app搜索到设备 –&gt; 连接成功 ，即可开始通过手机app进行控制</p>
+<p>并且在机智云网站的后台中能够看得到手机app端的操作日志：</p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240422191605985.png" alt="image-20240422191605985"></p>
+<h3 id="红外控制"><a href="#红外控制" class="headerlink" title="红外控制"></a>红外控制</h3><p>使用 <strong>红外遥控器</strong> 和 <strong>集成于开发板上的红外接收器</strong> </p>
+<h3 id="按键控制"><a href="#按键控制" class="headerlink" title="按键控制"></a>按键控制</h3><p>使用 <strong>单片机上的物理按键</strong> ，主要用于设备的启动关机及重启</p>
+<h2 id="显示模块"><a href="#显示模块" class="headerlink" title="显示模块"></a>显示模块</h2><blockquote>
+<p>主要用于显示展示目前设备的各种状态信息，内容是面向用户端的</p>
+</blockquote>
+<h3 id="LCD显示"><a href="#LCD显示" class="headerlink" title="LCD显示"></a>LCD显示</h3><blockquote>
+<p>注意：LCD在此项目中仅用于显示，不用于触控</p>
+</blockquote>
+<p>用于显示基本信息：晾晒状态（电机状态）、晾晒日志、环境温度、衣物湿度、是否开启托管模式</p>
+<h3 id="app显示"><a href="#app显示" class="headerlink" title="app显示"></a>app显示</h3><p>用于显示控制信息：晾晒控制（电机正反转）、是否开启托管模式、环境温度、衣物湿度</p>
+<h2 id="机械模块"><a href="#机械模块" class="headerlink" title="机械模块"></a>机械模块</h2><blockquote>
+<p>在此项目中，做简化处理，只需要步进电机能有<strong>两种状态：正转、反转</strong> 即可</p>
+</blockquote>
+<h1 id="准备资料"><a href="#准备资料" class="headerlink" title="准备资料"></a>准备资料</h1><h2 id="硬件"><a href="#硬件" class="headerlink" title="硬件"></a>硬件</h2><h3 id="主控：STM32F103ZET6"><a href="#主控：STM32F103ZET6" class="headerlink" title="主控：STM32F103ZET6"></a>主控：STM32F103ZET6</h3><h3 id="wifi模块：ESP8266"><a href="#wifi模块：ESP8266" class="headerlink" title="wifi模块：ESP8266"></a>wifi模块：ESP8266</h3><p>烧写了机智云官方的GAgent固件（而非原厂AT固件）</p>
+<h3 id="温湿度传感器：DHT11"><a href="#温湿度传感器：DHT11" class="headerlink" title="温湿度传感器：DHT11"></a>温湿度传感器：DHT11</h3><p>已运行例程</p>
+<h3 id="光敏传感器"><a href="#光敏传感器" class="headerlink" title="光敏传感器"></a>光敏传感器</h3><p>已运行例程</p>
+<h3 id="红外遥控"><a href="#红外遥控" class="headerlink" title="红外遥控"></a>红外遥控</h3><p>已运行例程</p>
+<h3 id="显示模块：2-8寸TFTLCD电阻触摸屏"><a href="#显示模块：2-8寸TFTLCD电阻触摸屏" class="headerlink" title="显示模块：2.8寸TFTLCD电阻触摸屏"></a>显示模块：2.8寸TFTLCD电阻触摸屏</h3><p>已运行例程</p>
+<blockquote>
+<p>在此项目中仅作为显示屏幕使用，不作为触摸操作屏幕使用</p>
+</blockquote>
+<h3 id="电机：五线四相步进电机（uln2003驱动）"><a href="#电机：五线四相步进电机（uln2003驱动）" class="headerlink" title="电机：五线四相步进电机（uln2003驱动）"></a>电机：五线四相步进电机（uln2003驱动）</h3><h1 id="工程搭建"><a href="#工程搭建" class="headerlink" title="工程搭建"></a>工程搭建</h1><p>按照以下模板构建起一个keil工程文件，主要包括：</p>
+<ul>
+<li><p>startup：启动文件</p>
+</li>
+<li><p>User：存放HAL库用户配置文件、main.c、stm32f1xx_it.c、以及我们编写的其他应用程序</p>
+</li>
+<li><p>Drivers：存放与硬件相关的驱动层文件</p>
+<p>其中，Drivers&#x2F;SYSTEM文件夹中内容尤为重要：</p>
+<pre><code>是用来快速构建工程的：
+1，delay文件夹：存放延时相关的驱动代码，支持在os下面使用。
+2，sys文件夹：存放系统相关驱动代码，包括系统时钟初始化，IO口配置，中断管理等三部分内容。
+3，usart文件夹：存放串口相关代码，支持printf，方便调试。
+</code></pre>
+</li>
+<li><p>Readme：一些工程的说明</p>
+</li>
+</ul>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/project.png" alt="project"></p>
+<h1 id="参数配置"><a href="#参数配置" class="headerlink" title="参数配置"></a>参数配置</h1><h2 id="系统时钟配置"><a href="#系统时钟配置" class="headerlink" title="系统时钟配置"></a>系统时钟配置</h2><p>1、使用 <code>STM32CubeMx</code> 配置好各个参数后就可以不用管以下操作了</p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240424172726614.png" alt="image-20240424172726614"></p>
+<p>2、外设时钟使能和失能 </p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240424173032010.png" alt="image-20240424173032010"></p>
+<blockquote>
+<p>关于 系统时钟初始化函数 <code>HAL_RCC_OscConfig() </code> 、<code> HAL_RCC_ClockConfig()</code> 、<code>HAL_RCCEx_PeriphCLKConfig()</code> 的调用工作，我们无需在意，因为其实就是STM32CubeMx在视图窗口中根据我们的配置之后就自动完成好了。</p>
+<p>而在正点原子官方给出的例程中，则是直接将<strong>上述系统时钟初始化函数所做的工作</strong>都集中在一个叫做 <code>sys_stm32_clock_init()</code> 的函数中，如果运用正点原子的官方例程进行移植，要注意这一点。</p>
+</blockquote>
+<h1 id="模块核心代码分析"><a href="#模块核心代码分析" class="headerlink" title="模块核心代码分析"></a>模块核心代码分析</h1><h2 id="GAgent通信模块"><a href="#GAgent通信模块" class="headerlink" title="GAgent通信模块"></a>GAgent通信模块</h2><h3 id="配置处理"><a href="#配置处理" class="headerlink" title="配置处理"></a>配置处理</h3><p>有一些配置操作需要完成</p>
+<ul>
+<li>配置入网</li>
+<li>恢复出厂配置</li>
+</ul>
+<p>由该函数<code>int32_t gizwitsSetMode(uint8_t mode)</code>来进行配置</p>
+<p>传入参数：mode，支持三种配置模式：</p>
+<ul>
+<li><p>WIFI_RESET_MODE：恢复出厂配置</p>
+</li>
+<li><p>WIFI_SOFTAP_MODE：进入softap配置模式</p>
+</li>
+<li><p>WIFI_AIRLINK_MODE：进入airlink配置模式</p>
+<p>【详情见<code>gizwits_protocol.h</code>文件的 枚举变量<code>WIFI_MODE_TYPE_T</code>】</p>
+<p>可根据产品的定义实现不同的配置操作，如按键触发进入某特定配置模式</p>
+</li>
+</ul>
+<h3 id="下行处理"><a href="#下行处理" class="headerlink" title="下行处理"></a>下行处理</h3><p>在<strong>完成传感器驱动</strong>的开发之后，在Gizwits目录下的<code>gizwits_product.c</code>文件中的<code>gizwitsEventProcess()</code>函数中处理相应事件即可。</p>
+<blockquote>
+<p>轮询事件队列，并每次在switch语句中，根据事件info的类型来指定处理事件的函数</p>
+</blockquote>
+<p>传入参数：eventInfo_t *info、uint8_t *data,、uint32_t len</p>
+<ul>
+<li>eventInfo_t：指向事件队列结构体的指针，事件队列结构体包含num、event[ ]</li>
+<li>data：指向自己在机智云平台定义的数据点结构体 dataPoint_t 的指针</li>
+<li>len：协议传输的数据长度（不使用）</li>
+</ul>
+<h3 id="上行处理"><a href="#上行处理" class="headerlink" title="上行处理"></a>上行处理</h3><p>首先仍然是需要先<strong>完成传感器驱动开发</strong>，然后在Gizwits目录下的<code>gizwits_product.c</code>文件中的<code>userHandle()</code>函数中实现传感器数据的采集，用户只需并将采集到的数值赋值给对应用户区的<strong>设备状态结构体数据位</strong>即可</p>
+<blockquote>
+<p>注意：<code>userHandle()</code>被while循环调用，执行速度较快，需要针对不同的需求，是可以调整数据点数据的采集周期和接口实现位置的，预防由于传感器数据采集过快引发的不必要的问题。且不建议在userHandle()中调用延时函数来降低执行频率。</p>
+<p><em><strong>故在此处：最好是不在该函数里进行传感器数据的采集，而是在其他位置进行采集</strong></em></p>
+</blockquote>
+<h1 id="工程"><a href="#工程" class="headerlink" title="工程"></a>工程</h1><h2 id="数据定义"><a href="#数据定义" class="headerlink" title="数据定义"></a>数据定义</h2><h3 id="gizwits-protocol-h"><a href="#gizwits-protocol-h" class="headerlink" title="gizwits_protocol.h"></a>gizwits_protocol.h</h3><h4 id="自定义数据点结构体"><a href="#自定义数据点结构体" class="headerlink" title="自定义数据点结构体"></a>自定义数据点结构体</h4><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">/** User Area Device State Structure */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> &#123;</span><br><span class="line">    <span class="type">bool</span> valueLED0;<span class="comment">//可写</span></span><br><span class="line">    <span class="type">bool</span> valueLED1;<span class="comment">//可写</span></span><br><span class="line">    <span class="type">uint32_t</span> valuedegree;<span class="comment">//可写</span></span><br><span class="line">    <span class="type">bool</span> valuecareMODE;<span class="comment">//只读【其实应该是可写的，后期可改，现在只是先做一个壳子】</span></span><br><span class="line">    <span class="type">uint32_t</span> valuelight;<span class="comment">//只读</span></span><br><span class="line">    <span class="type">uint32_t</span> valuehumidity;<span class="comment">//只读</span></span><br><span class="line">&#125; dataPoint_t;</span><br></pre></td></tr></table></figure>
+
+<h4 id="事件枚举类型"><a href="#事件枚举类型" class="headerlink" title="事件枚举类型"></a>事件枚举类型</h4><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">/** Event enumeration */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span></span><br><span class="line">&#123;</span><br><span class="line">    WIFI_SOFTAP = <span class="number">0x00</span>,                               <span class="comment">///&lt; WiFi SOFTAP configuration event</span></span><br><span class="line">    WIFI_AIRLINK,                                     <span class="comment">///&lt; WiFi module AIRLINK configuration event</span></span><br><span class="line">    WIFI_STATION,                                     <span class="comment">///&lt; WiFi module STATION configuration event</span></span><br><span class="line">    WIFI_OPEN_BINDING,                                <span class="comment">///&lt; The WiFi module opens the binding event</span></span><br><span class="line">    WIFI_CLOSE_BINDING,                               <span class="comment">///&lt; The WiFi module closes the binding event</span></span><br><span class="line">    WIFI_CON_ROUTER,                                  <span class="comment">///&lt; The WiFi module is connected to a routing event</span></span><br><span class="line">    WIFI_DISCON_ROUTER,                    <span class="comment">///&lt; The WiFi module has been disconnected from the routing event</span></span><br><span class="line">    WIFI_CON_M2M,                                     <span class="comment">///&lt; The WiFi module has a server M2M event</span></span><br><span class="line">    WIFI_DISCON_M2M,                    <span class="comment">///&lt; The WiFi module has been disconnected from the server M2M event</span></span><br><span class="line">    WIFI_OPEN_TESTMODE,                               <span class="comment">///&lt; The WiFi module turns on the test mode event</span></span><br><span class="line">    WIFI_CLOSE_TESTMODE,                              <span class="comment">///&lt; The WiFi module turns off the test mode event</span></span><br><span class="line">    WIFI_CON_APP,                                     <span class="comment">///&lt; The WiFi module connects to the APP event</span></span><br><span class="line">    WIFI_DISCON_APP,                                  <span class="comment">///&lt; The WiFi module disconnects the APP event</span></span><br><span class="line">    WIFI_RSSI,                                        <span class="comment">///&lt; WiFi module RSSI event</span></span><br><span class="line">    WIFI_NTP,                                         <span class="comment">///&lt; Network time event</span></span><br><span class="line">    MODULE_INFO,                                      <span class="comment">///&lt; Module information event</span></span><br><span class="line">    TRANSPARENT_DATA,                                 <span class="comment">///&lt; Transparency events</span></span><br><span class="line">    EVENT_LED0, <span class="comment">//LED0</span></span><br><span class="line">    EVENT_LED1, <span class="comment">//LED1</span></span><br><span class="line">    EVENT_degree, <span class="comment">//晾衣架展开程度：1/4、1/2、3/4、1, 每1/4电机转动90度</span></span><br><span class="line">    EVENT_TYPE_MAX             <span class="comment">///&lt; Enumerate the number of members to calculate (user accidentally deleted)</span></span><br><span class="line">&#125; EVENT_TYPE_T;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+<h1 id="工程测试"><a href="#工程测试" class="headerlink" title="工程测试"></a>工程测试</h1><p>使用正点原子串口调试助手，对程序进行调试</p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240423111940503.png" alt="image-20240423111940503"></p>
+<table>
+<thead>
+<tr>
+<th>资源</th>
+<th>数量</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>电源指示灯</td>
+<td>1 个</td>
+<td>蓝色</td>
+</tr>
+<tr>
+<td>电源开关</td>
+<td>1 个</td>
+<td>控制整个板子供电</td>
+</tr>
+<tr>
+<td>LED</td>
+<td>2 个</td>
+<td>红色（DS0）；绿色（DS1）；</td>
+</tr>
+<tr>
+<td>复位按键</td>
+<td>1 个</td>
+<td>用于 MCU&amp;LCD 的复位</td>
+</tr>
+<tr>
+<td>功能按键</td>
+<td>3 个</td>
+<td>KEY0、KEY1、KEY_UP（具备唤醒功能）</td>
+</tr>
+<tr>
+<td>红外接收头</td>
+<td>1 个</td>
+<td>用于红外接收，配备红外遥控器</td>
+</tr>
+<tr>
+<td>光敏传感器</td>
+<td>1 个</td>
+<td>用于感应环境光照强度</td>
+</tr>
+<tr>
+<td>数字温湿度传感器接口</td>
+<td>1 个</td>
+<td>支持 DS18B20、DHT11 等数字温湿度传感器</td>
+</tr>
+<tr>
+<td>ATK 模块接口</td>
+<td>1 个</td>
+<td>可以接 NRF24L01 等无线模块</td>
+</tr>
+<tr>
+<td>LCD 接口</td>
+<td>1 个</td>
+<td>支持正点原子 2.8&#x2F;3.5&#x2F;4.3&#x2F;7 寸等多种 TFTLCD 模块</td>
+</tr>
+<tr>
+<td>USB 转串口</td>
+<td>1 个</td>
+<td>用于 USB 转 TTL 串口通信</td>
+</tr>
+<tr>
+<td>USB 从机接口</td>
+<td>1 个</td>
+<td>用于 USB SLAVE（从机）通信</td>
+</tr>
+<tr>
+<td>CAN&#x2F;USB 选择接口</td>
+<td>1 个</td>
+<td>用于选择 PA11&#x2F;PA12 做 CAN 还是 USB 通信</td>
+</tr>
+<tr>
+<td>JTAG&#x2F;SWD 调试口</td>
+<td>1 个</td>
+<td>用于仿真调试、下载代码等</td>
+</tr>
+<tr>
+<td>5V 电源输入&#x2F;输出口</td>
+<td>1 组</td>
+<td>用于 5V 电源接入&#x2F;对外提供 5V 电压</td>
+</tr>
+<tr>
+<td>引出 IO</td>
+<td>110</td>
+<td>除 RTC 晶振占用的 2 个 IO 口外，其他 IO 口全引出</td>
+</tr>
+<tr>
+<td>一键下载电路</td>
+<td>1 个</td>
+<td>方便使用串口下载代码</td>
+</tr>
+<tr>
+<td>启动模式选择配置接口</td>
+<td>1 个</td>
+<td>用于设置 STM32 启动模式</td>
+</tr>
+</tbody></table>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240511221832845.png" alt="image-20240511221832845"></p>
+<p>arr：TIM_Period &#x3D; 10000</p>
+<p>psc：TIM_Prescaler &#x3D; 14400 -1 &#x3D;  14399</p>
+<p>（10000 * 14400） &#x2F; 72M  &#x3D; 2 s</p>
+<p>18000 - 1 &#x3D; 17999</p>
+<p>（10000 * 18000）&#x2F; 72M &#x3D; 2.5 s</p>
+<p>CPU </p>
+<p>1 个 STM32F103ZET6；FLASH：512KB；SRAM：64KB；</p>
+<p>SPI FLASH </p>
+<p>1 个 16MB</p>
+<p>EEPROM </p>
+<p>1 个 2Kb（256B）</p>
+<p>电容触摸按键 </p>
+<p>1 个 TPAD，用于电容触摸按键</p>
+<p>可调电位器 </p>
+<p>1 个 用于设置 RV1 的电源，方便 ADC 实验测试</p>
+<p>蜂鸣器 </p>
+<p>1 个 有源蜂鸣器，用于发出提示音</p>
+<p>无线模块接口 </p>
+<p>CAN 接口 </p>
+<p>1 个 用于 CAN 通信，带 120R 终端电阻</p>
+<p>RS485 接口 </p>
+<p>1 个 用于 RS485 通信，带 120R 终端电阻</p>
+<p>摄像头接口 </p>
+<p>1 个 和 OLED 共用一个接口，支持正点原子各种摄像头模块</p>
+<p>OLED 模块接口 </p>
+<p>1 个 和摄像头模块接口共用，支持正点原子各种 OLED 模块</p>
+<p>485 选择接口 </p>
+<p>1 个 用于选择 PA2&#x2F;PA3 是否用作 RS485 通信</p>
+<p>TF 卡接口 </p>
+<p>1 个 用于接 TF 卡</p>
+<p>多功能接口 </p>
+<p>1 组 用于 DAC&#x2F;ADC&#x2F;TPAD&#x2F;RV1 等互联</p>
+<p>直流电源输入接口 </p>
+<p>1 个 支持 DC6V~15V 直流电源输入，采用 DC005 接口</p>
+<p>后备电池接口 </p>
+<p>1 个 用于 RTC 后备电池</p>
+<p>请将这篇论文翻译为中文，注意不要将论文中的专有名词翻译出来:</p>
+<p><em>Abstract</em>—Swarms of collaborating Unmanned Aerial Vehicles (UAVs) that utilize ad-hoc networking technologies for coordinat- ing their actions offer the potential to catalyze emerging research fields such as autonomous exploration of disaster areas, demand- driven network provisioning, and near field packet delivery in In- telligent Transportation Systems (ITSs). As these mobile robotic networks are characterized by high grades of relative mobility, existing routing protocols often fail to adopt their decision making to the implied network topology dynamics. For addressing these challenges, we present Predictive Ad-hoc Routing fueled by Reinforcement learning and Trajectory knowledge (PARRoT) as a novel machine learning-enabled routing protocol which exploits mobility control information for integrating knowledge about the future motion of the mobile agents into the routing process. The performance of the proposed routing approach is evaluated using comprehensive network simulation. In comparison to established routing protocols, PARRoT achieves a massively higher robust- ness and a significantly lower end-to-end latency.</p>
+<p> <em>摘要</em>—利用无人机集群协同操作和自组织网络技术协调其行动提供了推进新兴研究领域的潜力，如自主灾区探索、需求驱动的网络供应、智能交通系统（ITS）中近地无线分组传输。由于这些移动机器人网络的特性，现有的路由协议往往难以适应网络拓扑动态性。针对这些挑战，我们提出了一种新的机器学习驱动的路由协议——基于强化学习和轨迹知识预测自组织路由（PARRoT），该协议利用移动控制信息来集成对移动设备未来运动的知识。我们使用高级网络模拟来评估该路由方法的性能。与既定的路由协议相比，PARRoT实现了极高的稳定性和显著降低的端到端延迟。</p>
+<p>I. INTRODUCTION</p>
+<p>Collaborating autonomous drones that coordinate their ac- tions using Flying Ad-hoc Networks (FANETs) offer the potential to efficiently perform important disaster relief tasks — e.g., remote sensing and network provisioning — without risking the lives of human helpers [1]. A closely related emerging research field is the integration of small-scale UAVs into future ITSs [2] for applications such as aerial traffic monitoring [3] and UAV-aided near field delivery [4]. While the latter concept has been initially proposed for reducing the delivery time in inner cities, its inherent avoidance of direct human-to-human interaction also makes it a promising candidate for increasing the delivery safety during the COVID-19 pandemic [5]. An illustration about different applications of UAV-based FANETs is shown in Fig. 1. For enabling these novel use-cases, the provision of efficient and reliable means of communication even in challenging environments is an important prerequisite. However, established Mobile Ad- hoc Network (MANET) routing protocols can often barely cope with the small channel coherence time and the network topology dynamic implied by the high grade of relative mo- bility. Anticipatory mobile networking [6] has been proposed for explicitly addressing the interdependency of mobility and communication by integrating <em>context</em> knowledge into the corresponding decision processes. This novel communications paradigm has a strong relationship to the usage of machine learning for optimizing wireless communication networks [7] which manifests in the trend of replacing complex mathemat- ical models by learned representations of the corresponding phenomena [8]. Moreover, it has catalyzed the emergence of novel performance evaluation methods that are capable of replacing computationally expensive entity-based modeling with machine learning-based end-to-end models [9]. In this paper, we present PARRoT as a novel reinforcement learning- enabled cross-layer routing protocol which leverages appli- cation layer knowledge from the mobility control routines for proactively optimizing the robustness of vehicular routing paths. The remainder of the paper is structured as follows. After discussing the related work in Sec. II, the novel PARRoT protocol is presented in Sec. III. Afterwards, an overview about the methodological aspects of the simulative performance evaluation is given in Sec. IV. Finally, detailed simulation results are provided and discussed in Sec. V.</p>
+<p>I. 引言</p>
+<p>借助飞行自组织网络（FANETs）协调行动的自主无人机集群，有可能高效地执行重要的灾后救援任务，例如遥感和网络供应，而无需使人类救援者的生命面临风险[1]。与此紧密关联的新兴研究领域是将小型无人驾驶载具（UAVs）整合进未来的智能交通系统（ITSs）中，以应用于空中交通监控[3]和UAV辅助的近地传送[4]等领域。虽然后者最初是为了降低城市内部的配送时间而提出的，但其避免了直接的人与人之间的交互，使其成为在COVID-19大流行期间提高配送安全性的有希望的候选方案[5]。关于基于UAV的FANETs的不同应用的说明如图1所示。为了实现这些新的应用案例，即使在具有挑战性的环境中，也需要提供高效可靠的通信方式，这是重要的前提条件。然而，既有的移动自组织网络（MANET）路由协议常常无法应对小信道相关性时间和由高度相对移动性导致的网络拓扑动态性。已经提出了期望的移动网络[6]，该网络通过整合<em>环境</em>知识到相应的决策过程中，明确解决了移动性和通信的互相关系。这种新的通信范式和使用机器学习优化无线通信网络[7]有着紧密的关系，这种关系体现在用学习的表示替代复杂的数学模型来呈现相应现象[8]的趋势。此外，它催生了新的性能评价方法的出现，这些方法能够用基于机器学习的端到端模型替代计算密集型的实体基模型[9]。在本论文中，我们提出了一种名为PARRoT的新颖强化学习启用的跨层路由协议，它利用来自移动性控制程序的应用层知识，积极地优化车辆路由路径的鲁棒性。本文的其余部分结构如下。在第II部分讨论了相关工作，然后在第III部分介绍了新颖的PARRoT协议。随后，在第IV部分给出了模拟性能评估的方法论方面的概述。最后，在第V部分提供并讨论了详细的模拟结果。</p>
+<p>II. RELATED WORK</p>
+<p>A wide range of solution approaches for specific appli- cations and different kinds of vehicular networks has been proposed by literature. Comprehensive summaries about ex- isting protocols for highly mobile networks are presented by the authors of [10] and [11]. Moreover, Cavalcanti et al. [12] provide an empirical analysis of the popularity of existing routing protocols and performance evaluation methods in the context of vehicular networking. Classically, MANET routing protocols have been classified into <em>reactive</em> — e.g., Ad-hoc On-demand Distance Vector (AODV) and Dynamic MANET On Demand Routing Protocol (DYMO) — and <em>proactive</em> — e.g., Destination-Sequenced Distance Vector (DSDV), Op- timized Link State Routing (OLSR), and Better Approach To Mobile Ad-hoc Networking (B.A.T.M.A.N.) — methods. However, the need to pay attention to the interdependency between mobility and communication has lead to the rise of <em>geo-based</em> routing approaches such as Greedy Perimeter State- less Routing in Wireless Networks (GPSR) which integrate position and velocity information into their decision making. In extension, <em>geo-predictive</em> approaches such as B.A.T.Mobile consider the anticipated future relative mobility of the vehicles within the routing process [13]. Similarly, Song et al. [14] present an extended variant of OLSR which uses Kalman filter- based mobility prediction for optimizing the Multipoint Relay (MPR) determination process.</p>
+<p><em>Reinforcement</em> <em>learning</em> can be regarded as a step towards zero touch optimization of wireless communication systems. Hereby, an <em>agent</em> learns to autonomously perform favorable <em>actions</em> in a defined <em>environment</em> through observation of the <em>rewards</em> of previously taken actions. Machine learning-enabled routing methods have been proposed by different researchers. The authors of [15] utilize an Artificial Neural Network (ANN)-enabled centralized routing approach using Software- defined Networking (SDN) for Vehicular Ad-hoc Networks (VANETs) delay minimization. Similar to our work, their proposed routing method Centralized Routing Scheme with Mobility Prediction (CRS-MP) takes into account mobility predictions of the mobile vehicles. Oddi et al. [16] use geo- based routing metrics jointly with Q-Learning-enabled rein- forcement learning. Similar to B.A.T.Mobile, and as further discussed in Sec. III, this method represents important ground- work for the novel PARRoT protocol. Due to the availability of data analysis tools such as LIghtweight Machine learning for IoT Systems (LIMITS) [17] which allow to automatically derive C++ implementations of trained prediction models, it can be expected that pervasive machine learning will be one of the key enablers for future network generation.</p>
+<p>Another ongoing development is the partial convergence of cellular and ad-hoc networking paradigms, illustrated by a growing interest in integrating single- and multi-hop device-to- device communication into cellular networks and manifested by concepts such as Multi-hop Cellular Networks (MCNs) [18]. As a consequence, novel developments in the ad-hoc networking domain might also have an impact on future cellular network generations [8].</p>
+<p>II. 相关工作</p>
+<p>文献中已经提出了广泛的解决方案，针对特定的应用和不同类型的车辆网络。作者们在[10]和[11]中提供了关于高度移动网络现有协议的全面总结。此外，Cavalcanti等人[12]提供了对现有路由协议和车辆网络环境中性能评估方法受欢迎程度的实证分析。经典的MANET路由协议被分类为<em>反应性</em>——例如：Ad-hoc On-demand Distance Vector (AODV)和Dynamic MANET On Demand Routing Protocol (DYMO)——和<em>主动性</em> —例如：Destination-Sequenced Distance Vector (DSDV)，Optimized Link State Routing (OLSR)，以及Better Approach To Mobile Ad-hoc Networking (B.A.T.M.A.N.)——的方法。然而，需要关注移动性和通信之间的相互依赖性，这导致了<em>基于地理位置的</em>路由方法的兴起，例如在无线网络中采用贪婪周边无状态路由(GPSR)，它将位置和速度信息整合进他们的决策过程中。作为补充，<em>地理预测</em>方法如B.A.T.Mobile将车辆在路由过程中预期的未来相对移动性纳入考虑因素中[13]。同样，宋等人[14]提出了一个扩展变种的OLSR，它使用基于卡尔曼滤波的移动性预测来优化多点中继（MPR）的确定过程。</p>
+<p><em>强化学习</em>可以被视为朝无触摸优化无线通信系统的一步。在此，一个<em>代理人</em>通过观察先前采取行动的<em>回报</em>，学习在定义的<em>环境</em>中自主进行有利的<em>操作</em>。不同的研究者提出了由机器学习启用的路由方法。[15]的作者使用软件定义网络（SDN）实现了一种基于人工神经网络（ANN）的集中式路由方法，用于车辆自组织网络（VANETs）的延迟最小化。与我们的工作类似，他们提出的路由方法——移动性预测的集中式路由方案（CRS-MP）考虑了移动车辆的移动性预测。Oddi等人[16]使用地理基础的路由度量与Q-Learning启用的强化学习联合使用。与B.A.T.Mobile类似，正如在第三节中进一步讨论的，这种方法为新颖的PARRoT协议提供了重要的基础工作。由于有如LIghtweight Machine learning for IoT Systems (LIMITS) [17]这样的数据分析工具可用，这些工具允许自动衍生训练过的预测模型的C++实现，因此可以预计，无处不在的机器学习将是未来网络生成的关键驱动因素之一。</p>
+<p>另一个正在进行的发展是蜂窝和自组织网络范式的部分交汇，这表现为对将单跳和多跳设备对设备通信集成到蜂窝网络的兴趣日益增长，并通过多跳蜂窝网络（MCNs）[18]等概念得到体现。因此，自组织网络领域的新开发可能也会对未来的蜂窝网络产生影响[8]。</p>
+<p>III. MACHINE LEARNING-ENABLED WIRELESS MESH ROUTING WITH PARROT</p>
+<p>The overall system architecture model of the proposed PARRoT is shown in Fig. 2. PARRoT consists of three logical core components which are further explained in the following paragraphs.</p>
+<p><em>A.</em> <em>PARRoT</em> <em>Wings</em> <em>-</em> <em>Cross-Layer</em> <em>Mobility</em> <em>Prediction</em></p>
+<p>PARRoT utilizes a cross-layer approach that leverages knowledge from the mobility control domain for anticipating the relative mobility between the different agents for a defined prediction horizon τ . For this purpose, each agent estimates its own future position p˜(t + τ ) based on the current position p(t). The result is then propagated to the other nodes of the network via the <em>chirp</em> distribution process (see Sec. III-B). If the PARRoT agent owns information about the planned trajectory as a sequence of k waypoints, an iterative prediction method consisting of N &#x3D;  τ&#x2F;∆t  steps is applied whereas ∆t represents the mobility update interval and the final result is given by p˜(t + τ ) &#x3D; p˜N . In each iteration i, the agent virtually moves towards the current waypoint wk as： ①</p>
+<p>with p˜0 &#x3D; p(t) and v being the current velocity. After each iteration, it is checked if the vehicle is now within the radius rw of the waypoint sphere: If ||wk − p˜i+1|| ≤ rw is fulfilled, the waypoint is considered <em>reached</em> and k is incremented.</p>
+<p>As a fallback mechanism for cases where no waypoint information is available, the average slope of the previous h positions is computed and extrapolated for τ . This method is non-iterative and allows to immediately compute the final result as：②</p>
+<p><em>B.</em> <em>PARRoT</em> <em>Chirp</em> <em>-</em> <em>Dissemination</em> <em>of</em> <em>Routing</em> <em>Messages</em> <em>and</em> <em>Context</em> <em>Knowledge</em></p>
+<p>PARRoT relies on an exchange of User Datagram Protocol (UDP)-based routing messages — which are referred to as <em>chirps</em> in the following — for adopting the local routing knowl- edge to the highly dynamic network topology conditions. The structure of the 40 Byte chirp packet is illustrated in Fig. 3.</p>
+<p>Chirp message distribution: Each PARRoT node peri- odically generates <em>chirp</em> messages based on a fixed interval ∆tchirp which are propagated through the network. Sequence numbering is used in order to allow the assessment of the data freshness. Upon reception of a PARRoT chirp message by node i via forwarder j and originated from d, the following steps are performed:</p>
+<p>（1）If the Sequence Number (SEQ) for d is not newer than the one of the last received chirp from d, the message is discarded and the following steps are omitted.</p>
+<p>（2）Otherwise, the received information is utilized to update the local knowledge maintained in the Q-Table based with the extracted values of <em>V</em> and ΦCoh. The corresponding process is further described in Sec. III-C.<br>（3）After the local handling, the chirp message is forwarded.For this purpose, the contained mobility information <strong>p</strong>(<em>t</em>) and ˜<strong>p</strong>(<em>t</em> + <em>τ</em> ) of the forwarder <em>j</em> is replaced by the corresponding values of node <em>i</em>. The Time to Live (TTL) is reduced by 1 and <em>V</em> as well as ΦCoh are updated according to Sec. III-C.</p>
+<p>An example for the propagation of chirp messages from node <em>D</em> and its usage for routing data packets from <em>A</em> to <em>D</em> is shown in Fig. 4.</p>
+<p>（1）Node <em>D</em> generates a chirp and initializes the reward <em>V**D</em></p>
+<p>with the highest possible value 1*.*0.</p>
+<p>（2）The message is received by the one hop neighbor nodes <em>C</em> and <em>F</em> which update their Q-Table entries according to Eq. 3. Both then forward the chirp message with an updated reward which is calculated as <em>V**（C&#x2F;F）</em> &#x3D; <em>Q</em>(<em>D, D</em>).</p>
+<p>（3）The forwarded messages are received and handled by <em>B</em> and <em>F</em>. The rewards are updated as <em>V**B&#x2F;F</em> &#x3D; <em>Q</em>(<em>D,</em> arg max<em>j</em> <em>Q</em>(<em>D, j</em>)). <em>C</em> and <em>F</em> also mutually receive the chirp message but discard it as the sequence number is outdated.</p>
+<p>（4）<em>A</em> finally receives the message originated from <em>D</em> via <em>B</em> and <em>E</em> and updates the corresponding table entries.</p>
+<p>（5）For routing messages from <em>A</em> to <em>D</em>, node <em>A</em> only knows about its direct neighbors <em>N</em> &#x3D; (<em>B, E</em>) and about the existence of the destination node which is hidden beyond a black box network region. In each forwarding step, the message is propagated to neighbor <em>j</em> &#x3D; arg max<em>j</em> <em>Q</em>(<em>D, j</em>). </p>
+<p><em>C. PARRoT Brain - Reinforcement Learning-Based Route</em> <em>Maintenance</em></p>
+<p>The routing process of PARRoT is inspired by existing approaches and distills initial ideas by the authors of [16] and [13]. It consists of two core components which are explained in the following.</p>
+<p>Online routing process: Similar to decentralized approaches such as B.A.T.M.A.N. and in contrast to path planning-based protocols such as OLSR, each node has only a partial view on the overall network topology. In order to route messages to given destination <em>d</em>, each node <em>i</em> only assesses the suitability of its direct neighbors <em>N</em> for reaching <em>d</em> — the intermediate network is treated as a black box. For this purpose, the numeric values for the end-to-end link quality Q(d,j) are maintained in a <em>Q-Table</em>. The online routing decision process can then be formulated as argmaxj Q(d,j) whereas the one-hop neighbor j with the highest Q value is chosen as a message forwarder.The implied maintenance of multiple paths for each destination inherently provides the protocol with self healing capabilities that allow PARRoT to quickly recover after failure of nodes.</p>
+<p>Update procedure: Upon reception of a chirp message, the receiver node updates its local knowledge about the reverse path to the originator using a modified <em>Q-Learning</em> method as：③</p>
+<p>whereas <em>α</em> is the learning rate and <em>V**j</em> represents the received reverse path score to the originator <em>d</em> via forwarder <em>j</em> which is extracted from the chirp message. The variable <em>discount</em> <em>factor</em> <em>γ</em>(<em>j</em>) serves as a <em>multidimensional routing metric</em> and is computed as：④</p>
+<p>with <em>γ</em>0 being a constant value for ensuring loop-free routing through a guaranteed metric degradation per hop. ΦLET(<em>i, j</em>) utilizes an estimation of the Link Expiry Time(LET) between <em>i</em> and <em>j</em> which takes into the account the results of the mobility prediction process (see Sec. III-A). For a given prediction horizon <em>τ</em> , the metric is computed as：⑤</p>
+<p>With  ∆p &#x3D; pj − pi	being  the  relative  position  and ∆v &#x3D; vj − vi	being  the  relative  velocity,  the  relative trajectory can be written as ∆˜p &#x3D; ∆p + t · ∆v. The LET(i,j) between nodes i and j represents the time t where the distance between i and j exceeds the maximum communication radius rTX. Thus, rTX &#x3D;	∆˜p2x + ∆˜p2y + ∆˜p2z needs to be solved for t in order to determine LET(i,j). Substituting：⑥⑦⑧</p>
+<p>allows to derive：⑨</p>
+<p>Due to the square root, three different cases can be distinguished: ⑩</p>
+<p>These conditions can be interpreted as follows. In the first case, the link is and will stay unavailable. In the second case, the link is currently available and will expire at t2. In the last case, the link is expected to become available at <em>t</em>1 and will expire at <em>t</em>2. ΦCoh(<em>j</em>) is a measure for the neighbor set <em>coherence</em> of message forwarder <em>j</em> based on the difference between the neighbor sets <em>N</em> at the times <em>t</em> and <em>t</em> <em>−</em> <em>t**h</em>. According to [16], it is derived as：【11】</p>
+<p>with operator being the symmetrical difference between the two considered node sets.</p>
+<p>III. 用PARRoT实现的机器学习启用的无线网状路由</p>
+<p>建议的PARRoT的整体系统架构模型如图2所示。PARRoT由三个逻辑核心组件组成，这些组件将在以下段落中进一步解释。</p>
+<p>A. PARRoT Wings - 跨层移动性预测</p>
+<p>PARRoT利用一种跨层方法，这种方法利用移动控制领域的知识预测定义的预测时间范围τ内不同代理之间的相对移动性。为此，每个代理基于当前位置p(t)估计其未来位置p˜(t + τ )。然后通过<em>chirp</em>分布过程将结果传播到网络的其他节点（见第III-B节）。如果PARRoT代理拥有以k个航点序列表示的计划轨迹的信息，则应用由N &#x3D; τ &#x2F;∆t 步组成的迭代预测方法，其中∆t表示移动更新间隔，最终结果由p˜(t+ τ ) &#x3D; p˜N 给出。在每次迭代i中，代理虚拟向当前航点wk移动：①</p>
+<p>其中p˜0 &#x3D; p(t)和v是当前速度。每次迭代后，将检查车辆是否现在在航点球的半径rw内：如果满足||wk − p˜i+1|| ≤ rw ，则认为已经<em>到达</em>航点，并增加k。</p>
+<p>作为一种回退机制，用于处理没有航点信息可用的情况，计算前h个位置的平均斜率，并将其对τ进行外推。这种方法是非迭代的，可以立即计算最终结果：②</p>
+<p>B. PARRoT Chirp - 分发路由消息和上下文知识</p>
+<p>PARRoT依赖于User Datagram Protocol（UDP）基础的路由消息的交换 - 其在接下来的部分中被称为<em>chirps</em> - 以便适应高度动态的网络拓扑条件。40字节chirp数据包的结构如图3所示。</p>
+<p>Chirp消息分发：每个PARRoT节点基于固定间隔∆tchirp周期性地生成<em>chirp</em>消息，通过网络进行传播。使用序列编号以允许评估数据的新鲜度。当节点i通过转发器j收到源自d的PARRoT chirp消息时，执行以下步骤：</p>
+<p>（1）如果d的序列号（SEQ）不比上次从d收到的chirp的序列号新，则丢弃该消息，并忽略以下步骤。<br>（2）否则，使用接收到的信息更新Q-Table中基于提取的<em>V</em>值和ΦCoh进行维护的本地知识。相关的处理过程在第III-C节中进一步描述。<br>（3）在本地处理后，转发chirp消息。为此，替换转发器<em>j</em>包含的移动信息<strong>p</strong>(<em>t</em>)和 <strong>p</strong>˜(<em>t</em> + <em>τ</em>)为节点<em>i</em>的对应值。生存时间（Time to Live，TTL）减少1，并根据第III-C节的规定更新<em>V</em>和ΦCoh。<br>节点<em>D</em>从发出chirp消息，以及从<em>A</em>向<em>D</em>路由数据包的用法的一个例子如图4所示。<br>（1）节点<em>D</em>生成一条chirp，将奖励<em>V**D</em>初始化为最高可能的值1.0。<br>（2）邻居节点<em>C</em>和<em>F</em>接收到消息后，会根据等式3更新其Q-Table的条目。然后，它们都会转发带有更新奖励的chirp消息，该奖励计算为<em>V**（C&#x2F;F）</em> &#x3D; <em>Q</em>(<em>D,</em> <em>D</em>)。<br>（3）转发的消息被<em>B</em>和<em>F</em>接收和处理。奖励更新为<em>V**B&#x2F;F</em> &#x3D; <em>Q</em>(<em>D</em>，arg max<em>j</em> <em>Q</em>(<em>D, j</em>)). <em>C</em>和<em>F</em>也互相接收到chirp消息，但由于序列号已过时，所以将其丢弃。<br>（4）<em>A</em>最后收到了来自<em>B</em>和<em>E</em>的，源自<em>D</em>的消息，并更新相应的表项。<br>（5）对于从<em>A</em>向<em>D</em>路由消息，节点<em>A</em>只知道直接邻居<em>N</em> &#x3D; (<em>B, E</em>)，以及目标节点的存在，这是隐藏在黑箱网络区域之外的。在每个转发步骤中，消息被传递给邻居<em>j</em> &#x3D; arg max<em>j</em> <em>Q</em>(<em>D, j</em>)。</p>
+<p>5）对于从<em>A</em>向<em>D</em>的路由消息，节点<em>A</em>只知道它的直接邻居<em>N</em>&#x3D;（<em>B, E</em>），以及隐藏在黑盒网络区域之外的目标节点的存在。在每个转发步骤中，消息传播到邻居<em>j</em> &#x3D; arg max<em>j</em> <em>Q</em>(<em>D, j</em>)。</p>
+<p><em>C. PARRoT Brain - 基于强化学习的路由维护</em></p>
+<p>PARRoT的路由过程受到现有方法的启发，并由[16]和[13]的作者提出初步想法。 它由两个核心组件组成，以下进行解释。</p>
+<p>在线路由过程：与B.A.T.M.A.N.等分散方法类似，与OLSR等基于路径规划的协议相反，每个节点只对整个网络拓扑有部分视图。为了将消息路由至给定的目标<em>d</em>，每个节点<em>i</em>只评估其直接邻居<em>N</em>对达到<em>d</em>的适用性-中间网络被视为黑盒。为此，保持在<em>Q-表</em>中的端到端链路质量<em>Q</em>(<em>d,j</em>)的数值。然后可以将在线路由决策过程表述为argmaxj <em>Q</em>(<em>d,j</em>)，其中一个跳邻居<em>j</em>的<em>Q</em>值最高，被选作消息转发者。为每个目标维护多条路径的内在提供了具有自我修复能力的协议，在节点故障后让PARRoT能快速恢复。</p>
+<p>更新过程：接收到chirp消息后，接收节点使用修正的<em>Q-学习</em>方法更新对来信者的反向路径的本地知识，公式如下：③</p>
+<p>其中，<em>α</em>是学习率，<em>V**j</em>表示收到的通过转发<em>j</em>向来信者<em>d</em>的反向路径评分，这是从chirp消息中提取的。变量<em>折扣因子 γ</em>(<em>j</em>)充当<em>多维路由指标</em>，其计算方式如下：④</p>
+<p>IV. METHODOLOGY OF THE SIMULATIVE PERFORMANCE EVALUATION</p>
+<p>In this section, the methodological aspects of the performance evaluation are presented. All simulations are performed using the Objective Modular Testbed in C++ (OMNeT++) framework [19] jointly with INETMANET which provides implementation of various MANET protocols. For the performance analysis, the Packet Delivery Ratio (PDR) and the end-to-end latency of a video streaming application modeled as UDP Constant Bitrate (CBR) is considered. Within each evaluation run, sender and receiver are randomly chosen from the total set of vehicles. The source code of the developed OMNeT++ implementation for PARRoT is provided in an open source manner .</p>
+<p>Mobility models: For analyzing the routing behavior of PARRoT, a mixture of generic and realistic mobility models is considered. Visualizations of corresponding example trajectories and network topologies are shown in Fig. 5.</p>
+<p>（1）<strong>Random waypoint</strong> is used an abstract reference scenario within the parameter selection process. In order to allow PARRoT to exploit the trajectory knowledge and in contrast to conventional implementations, all future waypoint locations are computed at the beginning of the simulation run.</p>
+<p>（2）Distributed Dispersion Detection (DDD)[20] is an algorithm for coordinated swarm-based plume source exploration in disaster scenarios which ensures intra swarm connectivity through communication-aware mobility maneuvers.</p>
+<p>(3)Dynamic cluster hovering is a method for UAV-based network provisioning for hybrid vehicular networks initially presented in [21]. Hereby, multiple UAVs dynamically adjust their locations for providing network coverage for clusters of ground-based vehicles. Within the evalation scenario (which corresponds to the default scenario of the LIghtweight ICT-centric Mobility Simulation (LIMoSim) mobility simulator [21]), a total number of 10 UAVs operates at a flying height of 30 m. From a total number of 50 cars, a random subset of 10 vehicles is chosen to be equipped with communication interfaces.</p>
+<p><strong>Reference routing protocols</strong>: In the next section, PARRoT is compared to established routing protocols which implement different routing philosophies. All of the considered methods are configured according to their default parameter specification for mobile networking.</p>
+<p>(1)<strong>AODV</strong> is a well-established <em>reactive</em> routing protocol.</p>
+<p>(2)<strong>OLSR</strong> is a <em>proactive</em> protocol which uses a path planning approach that involves information about the whole network topology. Moreover, the protocol utilizes so-called MPRs for minimizing the amount of broadcast messages within the routing message distribution process.</p>
+<p>(3)<strong>GPSR</strong> is <em>geo-based</em> routing method which bases its greedy routing process on minimizing the geo-distance to the destination in each packet forwarding step.</p>
+<p>(4)<strong>B.A.T.Mobile</strong> is a <em>geo-predictive</em> extension to B.A.T.M.A.N. and represents an immediate groundwork</p>
+<p>for PARRoT.According to the empirical analysis of [12], the first three protocol represent the most commonly used approaches for VANET routing. A summary about the simulation parameters is provided by Tab. I.</p>
+<p>V. SIMULATION RESULTS</p>
+<p>In this section, the results of the OMNeT++-based simulations are presented. All errorbars show the 0.95 confidence interval of the mean value over the different simulation runs.</p>
+<p>In the following, the impact of different parameters on the behavior of PARRoT is analyzed before the performance of the novel protocol is compared to established methods in defined reference scenarios.</p>
+<p><em>A. Parameterization of PARRoT</em></p>
+<p>For all following parameter variations, the performance of PARRoT is analyzed using the rural channel model and random waypoint mobility.</p>
+<p><strong>Learning parameters</strong>: An evaluation of different values of the key reinforcement learning parameters of PARRoT is shown in Fig. 6. The learning rate <em>α</em> corresponds to the information gain per received chirp message. Thus, it is dependent to the relative mobility of the agents and the chirp interval ∆<em>t</em>chirp. If <em>α</em> is chosen too small, the agent fails to adopt its decision making to the dynamics of the network topology. As a consequence of the resulting choice of suboptimal routing paths, the end-to-end delay is increased and the PDR is reduced. If <em>α</em> is chosen too large, the impact of single chirp messages — which might be impacted by shortterm effects such as local queuing — is overemphasized. In Fig. 6 (a), it can be seen that <em>α</em> tolerates a certain grade of derivation from the optimal value without significantly reducing the end-to-end behavior of PARRoT. The basic discount factor <em>γ</em>0, which is shown in Fig. 6 (b), represents an implicit hop punishment for ensuring that the propagated reverse path quality to the originator decreases if the number of hops increases. Since the individual metrics that jointly form <em>γ</em>(<em>j</em>) (see Eq. 4) are multiplied with each other, it also acts as a scaling factor for the latter. Similar to <em>α</em>, <em>γ</em>0 needs to be chosen large enough such that the information gain converges with the network dynamics. For <em>γ</em>0 &#x3D; 1, the loop free routing condition <em>γ</em>(<em>j</em>) <em>&lt;</em> 1 cannot be guaranteed. As a consequence, a massive drop of the end-to-end routing performance can be observed.</p>
+<p><strong>Mobility prediction</strong>: For improving the communication robustness through consideration of the relative mobility of the agents, PARRoT uses mobility prediction for deriving estimates of the corresponding LETs. Due to this dependency, the error of the mobility prediction should be minimized. Fig. 7 shows the resulting errors for the considered mobility prediction schemes with respect to the prediction horizon <em>τ</em> . As a reference, the behavior for a naive prediction method which assumes the vehicle position to stay constant is shown. In this case, the resulting error can be derived as <em>e</em>naive &#x3D; <em>v</em> <em>·</em> <em>τ</em> . In the worst case, the prediction points in the exact opposite direction of the actual movement which allows to derived an upper error bound <em>e</em>max &#x3D; 2<em>·**e</em>naive. It can be seen that the <em>waypoint-aware</em> prediction allows to provide comparable accurate prediction results. In contrast to the extrapolation-based <em>slope</em> method, it is able to integrate knowledge about the turning behavior of the vehicles into the prediction process. For completeness, it is remarked that the integration of waypoints also strengthens the robustness of the protocol against inaccurate location information [13]. As a consequence, PARRoT is configured to prefer the waypoint-aware mobility prediction method. If the mobility model does not provide waypoint information, the slope prediction is utilized as a fallback.The impact of the prediction horizon <em>τ</em> on the behavior of PARRoT for different velocities in the range of 50 km&#x2F;h to 250 km&#x2F;h is shown in Fig. 8. It can be seen that the link lifetime estimation of PARRoT is highly depending on the availability of mobility prediction results. In comparison to the non-predictive variant (<em>τ</em> &#x3D; 0), the PDR is increased by up to 75 % if the protocol uses a meaningful prediction horizon. For higher speeds, the end-to-end routing performance decreases and smaller values of <em>τ</em> should be preferred in order to adopt to the increased network dynamics. In addition, PARRoT becomes more sensitive to an optimal choice of <em>τ</em> .</p>
+<p><em>B. Performance Comparison with Existing Routing Protocols</em></p>
+<p><strong>Random mobility</strong>: Fig. 9 show the performance of the considered routing methods using random waypoint mobility with the rural channel model. Due to the non-coordinatedmotion, the existence of a routing path between sender and receiver is not always guaranteed. In order to pay attention to this aspect while classifying the performance of the different protocols, a theoretical upper bound — referred to as <em>Optimal</em> — for the PDR is provided based on post processing-based analysis of the network topology. However, it is remarked that this method is only able to consider the mobility-related aspects and does not account for load-related packet loss. In comparison to the well-established methods AODV, OLSR, and GPSR, PARRoT show a massively higher — at least by 45 % — PDR which is close to the optimum robustness. Moreover, its reinforcement learning-based routing approach even outperforms the also prediction-based routing method B.A.T.Mobile by 17 %.</p>
+<p>More challenging radio channel conditions are analyzed in Fig. 10. As the utilized channel model is subject to probabilistic effects, an upper bound for the PDR cannot be derived. Here, PARRoT shows a slightly lower PDR than B.A.T.Mobile. A plausible explanation for this observation is that the fast fading effects reduce the significance of the neighbor set coherence metric which then leads to sub-optimal routing decisions. Future extensions of PARRoT could explicitly address this issue through dynamic channel-dependent weighting the different metrics. All protocols suffer from a higher end-to-end delay due to an increased queuing time at the MAC layer due to sporadic link loss. The general tendency of these findings is also confirmed by the experiments of [22]. A scalability analysis of the considered routing protocols is shown in Fig. 11. As the size of the scenario is not varied, the increase of the number of agents corresponds to increasing the density of network nodes and the grade of routing opportunities. However, the higher amount of periodic routing traffic — especially for the proactive methods but also for neighbor discovery in reactive routing — leads to an increased probability for collision-related packet loss. It can be seen that the established routing methods fail to adopt to the network topology dynamics. Due to the high dependency of individual routing messages, they are unable to exploit the higher amount of possible routing paths. Due to the inherent maintenance of different routing paths per destination, PARRoT is robust against loss of individual chirp messages. In contrast to the reference protocols, it is able to leverage the increased network density for improving the robustness of the data transfer. However, for more than 20 active hosts, a slight decrease of the PDR can be observed.</p>
+<p><strong>Application-driven mobility</strong>: The behavior of the protocols in more realistic and application-specific mobility conditions is shown in Fig. 12. For the swarm mobility exploration method DDD, the corresponding results are visualized in Fig. 12 (a). Due to implemented <em>communication-aware</em> mobility approach which proactively adjusts the mobility behavior of the agents for ensuring swarm coherence, the PDR shows a high general level and does not vary significantly between the different routing protocols. Still, the predictive approach of PARRoT allows to proactively avoid some of the lower outlier values.</p>
+<p>The results for the UAV-based cluster hovering analysis are shown in Fig. 12 (b). This evaluation scenario is characterized by a complex network topology with a large number of mobile vehicles which show different mobility characteristics.In addition, the UAV cluster hovering is based on a ground traffic-related incremental position updating process which does not allow to accurately forecast future locations. As a consequence, the mobility-predictive routing methods are confronted with imprecise estimations for the relative mobilities. In this complex setting, B.A.T.Mobile is not able to maintain robust connectivity. In fact, the mobility predictions even reduce the routing performance of the protocol slightly beyond the PDR of the established methods. For completeness, it is remarked that these issues might be partially compensable through a scenario-specific parameter optimization. Although, PARRoT is also confronted with the same challenges, the resulting degradation of the routing performance is far less distinct. Due to the implemented multi-metric routing approach which does not only consider the link lifetime but also the neighbor set coherence, it is less vulnerable to imprecise mobility predictions. As a consequence, PARRoT is able to provide robust data delivery even in highly challenging hybrid vehicular networks.</p>
+<p>VI. CONCLUSION</p>
+<p>In this paper, we presented the novel routing protocol PARRoT for highly mobile robotic networks which brings together mobility-predictive routing with reinforcement learning-based decision making. In a comprehensive simulation-based performance evaluation, it was shown that the consideration of the future relative mobility between the agents allows PARRoT to achieve robust and efficient data delivery even in challenging radio propagation conditions. In future work, we will extend PARRoT for considering environment information within the link lifetime estimation process by integrating knowledge about the surrounding obstacles such as buildings. In addition, we will focus on analyzing the real world performance of the novel routing protocol.</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">switch</span>(currentDataPoint.valuedegree)</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">case</span> degree_VALUE0:</span><br><span class="line">    <span class="comment">//user handle</span></span><br><span class="line">    <span class="built_in">Stepper_RotateByLoop</span>(<span class="number">1</span>, <span class="number">1</span>, <span class="number">3</span>);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">case</span> degree_VALUE1:</span><br><span class="line">    <span class="comment">//user handle</span></span><br><span class="line">    <span class="built_in">Stepper_RotateByLoop</span>(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">case</span> degree_VALUE2:</span><br><span class="line">    <span class="comment">//user handle</span></span><br><span class="line">    <span class="built_in">Stepper_RotateByLoop</span>(<span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">case</span> degree_VALUE3:</span><br><span class="line">    <span class="comment">//user handle</span></span><br><span class="line">    <span class="built_in">Stepper_RotateByLoop</span>(<span class="number">1</span>, <span class="number">4</span>, <span class="number">3</span>);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">default</span>:</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief       等待DHT11的回应</span></span><br><span class="line"><span class="comment"> * @param       无</span></span><br><span class="line"><span class="comment"> * @retval      0, DHT11正常</span></span><br><span class="line"><span class="comment"> *              1, DHT11异常/不存在</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">uint8_t</span> <span class="title">dht11_check</span><span class="params">(<span class="type">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">uint8_t</span> retry = <span class="number">0</span>;</span><br><span class="line">    <span class="type">uint8_t</span> rval = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (DHT11_DQ_IN &amp;&amp; retry &lt; <span class="number">100</span>)  <span class="comment">/* DHT11会拉低约83us */</span></span><br><span class="line">    &#123;</span><br><span class="line">        retry++;</span><br><span class="line">        <span class="built_in">delay_us</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (retry &gt;= <span class="number">100</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        rval = <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        retry = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (!DHT11_DQ_IN &amp;&amp; retry &lt; <span class="number">100</span>) <span class="comment">/* DHT11拉低后会再次拉高约87us */</span></span><br><span class="line">        &#123;</span><br><span class="line">            retry++;</span><br><span class="line">            <span class="built_in">delay_us</span>(<span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (retry &gt;= <span class="number">100</span>) rval = <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> rval;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="type">int32_t</span> <span class="title">gizwitsHandle</span><span class="params">(dataPoint_t *currentData)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">int8_t</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="type">uint8_t</span> ackData[RB_MAX_LEN];</span><br><span class="line">    <span class="type">uint16_t</span> protocolLen = <span class="number">0</span>;</span><br><span class="line">    <span class="type">uint32_t</span> ackLen = <span class="number">0</span>;</span><br><span class="line">    protocolHead_t *recvHead = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="type">char</span> *didPtr = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="type">uint16_t</span> offset = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span>(<span class="literal">NULL</span> == currentData)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">GIZWITS_LOG</span>(<span class="string">&quot;GizwitsHandle Error , Illegal Param\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*resend strategy*/</span></span><br><span class="line">    <span class="comment">//重发机制</span></span><br><span class="line">    <span class="built_in">gizProtocolAckHandle</span>();</span><br><span class="line">    <span class="comment">//从缓冲区抓取数据包</span></span><br><span class="line">    ret = <span class="built_in">gizProtocolGetOnePacket</span>(&amp;pRb, gizwitsProtocol.protocolBuf, &amp;protocolLen);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(<span class="number">0</span> == ret)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">GIZWITS_LOG</span>(<span class="string">&quot;Get One Packet!\n&quot;</span>);</span><br><span class="line">        </span><br><span class="line"></span><br><span class="line">        <span class="comment">//保存接收到的协议包头</span></span><br><span class="line">        recvHead = (protocolHead_t *)gizwitsProtocol.protocolBuf;</span><br><span class="line">        <span class="comment">//通过协议包头中的命令字段进行命令对应的处理</span></span><br><span class="line">        <span class="keyword">switch</span> (recvHead-&gt;cmd)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">case</span> CMD_GET_DEVICE_INTO:</span><br><span class="line">                <span class="built_in">gizProtocolGetDeviceInfo</span>(recvHead);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="comment">//WIFI模块读取设备的当前状态</span></span><br><span class="line">            <span class="keyword">case</span> CMD_ISSUED_P0:</span><br><span class="line">                <span class="built_in">GIZWITS_LOG</span>(<span class="string">&quot;flag %x %x \n&quot;</span>, recvHead-&gt;flags[<span class="number">0</span>], recvHead-&gt;flags[<span class="number">1</span>]);</span><br><span class="line">                <span class="comment">//offset = 1;</span></span><br><span class="line">               </span><br><span class="line">                <span class="keyword">if</span>(<span class="number">0</span> == <span class="built_in">gizProtocolIssuedProcess</span>(didPtr, gizwitsProtocol.protocolBuf+<span class="built_in">sizeof</span>(protocolHead_t)+offset, protocolLen-(<span class="built_in">sizeof</span>(protocolHead_t)+offset+<span class="number">1</span>), ackData, &amp;ackLen))</span><br><span class="line">                &#123;</span><br><span class="line">                    <span class="built_in">gizProtocolIssuedDataAck</span>(recvHead, ackData, ackLen,recvHead-&gt;flags[<span class="number">1</span>]);</span><br><span class="line">                    <span class="built_in">GIZWITS_LOG</span>(<span class="string">&quot;AckData : \n&quot;</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> CMD_HEARTBEAT:</span><br><span class="line">                <span class="built_in">gizProtocolCommonAck</span>(recvHead);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> CMD_WIFISTATUS:</span><br><span class="line">                <span class="built_in">gizProtocolCommonAck</span>(recvHead);</span><br><span class="line">                <span class="built_in">gizProtocolModuleStatus</span>((protocolWifiStatus_t *)recvHead);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> ACK_REPORT_P0:</span><br><span class="line">            <span class="keyword">case</span> ACK_WIFI_CONFIG:</span><br><span class="line">            <span class="keyword">case</span> ACK_SET_DEFAULT:</span><br><span class="line">            <span class="keyword">case</span> ACK_NINABLE_MODE:</span><br><span class="line">            <span class="keyword">case</span> ACK_REBOOT_MODULE:</span><br><span class="line">                <span class="built_in">gizProtocolWaitAckCheck</span>(recvHead);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> CMD_MCU_REBOOT:</span><br><span class="line">                <span class="built_in">gizProtocolCommonAck</span>(recvHead);</span><br><span class="line">                <span class="built_in">GIZWITS_LOG</span>(<span class="string">&quot;report:MCU reboot!\n&quot;</span>);</span><br><span class="line">                </span><br><span class="line">                <span class="built_in">gizProtocolReboot</span>();</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> CMD_ERROR_PACKAGE:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> ACK_PRODUCTION_TEST:</span><br><span class="line">                <span class="built_in">gizProtocolWaitAckCheck</span>(recvHead);</span><br><span class="line">                <span class="built_in">GIZWITS_LOG</span>(<span class="string">&quot;Ack PRODUCTION_MODE success \n&quot;</span>);</span><br><span class="line">                <span class="keyword">break</span>;           </span><br><span class="line">            <span class="keyword">case</span> ACK_GET_NTP:</span><br><span class="line">                <span class="built_in">gizProtocolWaitAckCheck</span>(recvHead);</span><br><span class="line">                <span class="built_in">gizProtocolNTP</span>(recvHead);</span><br><span class="line">                <span class="built_in">GIZWITS_LOG</span>(<span class="string">&quot;Ack GET_UTT success \n&quot;</span>);</span><br><span class="line">                <span class="keyword">break</span>; </span><br><span class="line">            <span class="keyword">case</span> ACK_ASK_MODULE_INFO:</span><br><span class="line">                <span class="built_in">gizProtocolWaitAckCheck</span>(recvHead);</span><br><span class="line">                <span class="built_in">gizProtocolModuleInfoHandle</span>(recvHead);</span><br><span class="line">                <span class="built_in">GIZWITS_LOG</span>(<span class="string">&quot;Ack GET_Module success \n&quot;</span>);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="built_in">gizProtocolErrorCmd</span>(recvHead,ERROR_CMD);</span><br><span class="line">                <span class="built_in">GIZWITS_LOG</span>(<span class="string">&quot;ERR: cmd code error!\n&quot;</span>);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(<span class="number">-2</span> == ret)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">//Check failed, report exception</span></span><br><span class="line">        recvHead = (protocolHead_t *)gizwitsProtocol.protocolBuf;</span><br><span class="line">        <span class="built_in">gizProtocolErrorCmd</span>(recvHead,ERROR_ACK_SUM);</span><br><span class="line">        <span class="built_in">GIZWITS_LOG</span>(<span class="string">&quot;ERR: check sum error!\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-2</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//状态机的判断，用来完成对应协议命令的处理</span></span><br><span class="line">    <span class="keyword">switch</span>(gizwitsProtocol.issuedFlag)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">case</span> ACTION_CONTROL_TYPE:</span><br><span class="line">            gizwitsProtocol.issuedFlag = STATELESS_TYPE;</span><br><span class="line">            <span class="built_in">gizwitsEventProcess</span>(&amp;gizwitsProtocol.issuedProcessEvent, (<span class="type">uint8_t</span> *)&amp;gizwitsProtocol.gizCurrentDataPoint, <span class="built_in">sizeof</span>(dataPoint_t));</span><br><span class="line">            <span class="built_in">memset</span>((<span class="type">uint8_t</span> *)&amp;gizwitsProtocol.issuedProcessEvent,<span class="number">0x0</span>,<span class="built_in">sizeof</span>(gizwitsProtocol.issuedProcessEvent));  </span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> WIFI_STATUS_TYPE:</span><br><span class="line">            gizwitsProtocol.issuedFlag = STATELESS_TYPE;</span><br><span class="line">            <span class="built_in">gizwitsEventProcess</span>(&amp;gizwitsProtocol.wifiStatusEvent, (<span class="type">uint8_t</span> *)&amp;gizwitsProtocol.wifiStatusData, <span class="built_in">sizeof</span>(moduleStatusInfo_t));</span><br><span class="line">            <span class="built_in">memset</span>((<span class="type">uint8_t</span> *)&amp;gizwitsProtocol.wifiStatusEvent,<span class="number">0x0</span>,<span class="built_in">sizeof</span>(gizwitsProtocol.wifiStatusEvent));</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> ACTION_W2D_TRANSPARENT_TYPE:</span><br><span class="line">            gizwitsProtocol.issuedFlag = STATELESS_TYPE;</span><br><span class="line">            <span class="built_in">gizwitsEventProcess</span>(&amp;gizwitsProtocol.issuedProcessEvent, (<span class="type">uint8_t</span> *)gizwitsProtocol.transparentBuff, gizwitsProtocol.transparentLen);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> GET_NTP_TYPE:</span><br><span class="line">            gizwitsProtocol.issuedFlag = STATELESS_TYPE;</span><br><span class="line">            <span class="built_in">gizwitsEventProcess</span>(&amp;gizwitsProtocol.NTPEvent, (<span class="type">uint8_t</span> *)&amp;gizwitsProtocol.TimeNTP, <span class="built_in">sizeof</span>(protocolTime_t));</span><br><span class="line">            <span class="built_in">memset</span>((<span class="type">uint8_t</span> *)&amp;gizwitsProtocol.NTPEvent,<span class="number">0x0</span>,<span class="built_in">sizeof</span>(gizwitsProtocol.NTPEvent));</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> GET_MODULEINFO_TYPE:</span><br><span class="line">            gizwitsProtocol.issuedFlag = STATELESS_TYPE;</span><br><span class="line">            <span class="built_in">gizwitsEventProcess</span>(&amp;gizwitsProtocol.moduleInfoEvent, (<span class="type">uint8_t</span> *)&amp;gizwitsProtocol.wifiModuleNews, <span class="built_in">sizeof</span>(moduleInfo_t));</span><br><span class="line">            <span class="built_in">memset</span>((<span class="type">uint8_t</span> *)&amp;gizwitsProtocol.moduleInfoEvent,<span class="number">0x0</span>,<span class="built_in">sizeof</span>(moduleInfo_t));</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;      </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+<p>托管模式、延时、与云端通信、步进电机、红外控制、按键扫描、光敏传感器、温湿度传感器、蜂鸣器、LED</p>
+<p>联网绑定解绑、红外遥控控制、WIFI模块、手机APP控制、托管模式、云端日志</p>
+<p>【屏幕截图一定要封框、网页一定要截全图】</p>
+<p>摘要：第一段表达为什么要开发这个系统；第二段表达结合什么技术、实现了什么功能</p>
+<p>第一章前言：研究论文的目的和意义、国内外研究综述、论文研究内容和取得的内容、文章组织结构（第一章结束必须要完整的一页）</p>
+<p>第二章开发技术简介</p>
+<p>第三章系统分析： 可行性分析、需求分析</p>
+<p>第四章系统设计</p>
+<p>第五章系统实现</p>
+<p>第六章系统测试</p>
+<p>结论：做了哪些、有哪些改进</p>
+<p>参考文献从2019年开始</p>
+<p>查重不能超过20%，15%以内</p>
+<p>先用网上的维普，再用学校的</p>
+<p>第二章系统功能设计和方案选择</p>
+<p>27页软件流程图</p>
+<p>代码以图片的形式</p>
+<p><strong>摘要：随着智能设备。。。。</strong></p>
+<p>摘要</p>
+<p>随着智能家居产品逐渐进入千家万户，人们对于各种智能家居的需求也越来越大。中国智能家居市场每年以超过30%的增长速度扩大，智能晾衣架作为其分支市场，同样呈现出快速增长的趋势。一方面来说，智能晾衣架作为一种满足现代家居生活需求的创新产品，可以显著提升居家生活便捷性和舒适度。另一方面，由于中国特有的居住环境与气候条件，如小户型居室、湿润的南方气候以及频繁的雾霾天气等，对智能晾晒衣物具有一定需求。而目前大部分智能晾衣架虽然能够在控制方式做到智能化，但在监测方式、自动控制等方面仍然需要提高智能化程度。</p>
+<p>针对以上情况，本论文提出并实现了一种功能全面、性能稳定、基于STM32的智能晾衣架系统。该系统不仅具有远程控制、定时晾晒等基本功能，还具有智能晾晒提醒、衣物湿度检测、托管模式等智能程度更高的功能。该系统主要包含三个部分：智能晾衣架设备端、云端和手机APP端。智能晾衣架设备端主要包括控制芯片、WIFI、红外遥控、电机、传感器等模块；云端平台使用“机智云”平台；手机端APP使用“机智云”平台提供的SDK进行移植。该种智能晾衣架可以有效弥补传统晾衣架自主分析能力差、传感器数据浪费的缺点，并很好地解决这些缺点所导致的衣物晾晒程度难以判断、平均晾晒时间不足的问题。</p>
+<p>用户可以</p>
+<p>代码要求<strong>白底黑字</strong>、并且适当删减代码内容</p>
+<p><strong>适当删减内容：15000字比较合适</strong></p>
+<p>系统设计及选型</p>
+<p>系统测试</p>
+<p>①</p>
+<p>雷雨同学的毕业论文题目为“基于STM32的智能晾衣架设计与实现”，论文的选题结合了传感器技术和实际生活需求，有着明确的目标性和广泛的应用价值。此选题充分体现出该同学所学知识的综合运用能力，同时也符合专业特色。</p>
+<p>作者以STM32为核心进行硬件设计，并对数据的处理及展示进行深入研究，利用C语言进行项目实现。论文详细阐述了整个硬件系统从总体设计到实施的全过程，并成功设计出一个可进行有效测试的智能晾衣架系统，工作成果达到了预期设计目标。然而，关于硬件系统的设计细节和健壮性，还存在一定的优化空间，如：对托管模式的设计还可以更加贴合用户使用场景。尽管在系统设计部分的描述还可以更加具体，但从整体上看，完成度良好，工作量充足，符合毕业设计的要求。因此，同意论文提交答辩。</p>
+<p>②</p>
+<p>随着智能家居产品的不断普及，将物联网技术运用在智能家居中的程度也越来越高，雷雨同学的毕业论文“基于STM32的智能晾衣架设计与实现”，充分体现了该同学能够综合运用所学知识进行复杂系统的设计和开发的能力。在选题方面充分具备实用性和专业性，对于所涉及到的物联网技术能有较高水平的理解和应用。</p>
+<p>作者在进行智能晾衣架的设计和开发过程中，对智能晾衣架各模块、云服务能够具备较为清晰的认识及运用。智能晾衣架端使用了GAgent模组进行通讯，并实现了上层应用到产品设备的双向数据通讯。在硬件电路设计中，对STM32开发板的正确控制确保了电机按照晾衣架的展开、收回姿态进行正常运转。同时，设备端还能够接收云端的操作信号，并且实时处理用户发来的各种指令，这使得该智能晾衣架系统具有一定的自动化和智能化。论文中还构建了用户端程序，使得用户能在手机上使用各种远程操作功能，增大了此设备的交互性和用户友好度。该论文的结构安排合理，论述清楚，用词准确，图表详尽齐全，格式严谨符合规范。尽管涉及到的云端服务较少且均局限为数据的收集展示，但对于使用到的云端服务的运行机制描述得较为清晰，能够看得出来该生对于整个系统的各模块的研究均较为深入，完成度良好，工作量充足，符合毕业设计的要求。因此，同意论文提交答辩！</p>
 ]]></content>
       <categories>
         <category>毕业论文</category>
@@ -745,12 +1195,365 @@
   <entry>
     <title>算法学习之路</title>
     <url>/leiblog/2023/04/09/%E2%80%9C%E7%AE%97%E6%B3%95%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF%E2%80%9D/</url>
-    <content><![CDATA[]]></content>
+    <content><![CDATA[<blockquote>
+<p>前言：C、C++虽然一直都在接触，但是突然发现自己好像从来没有系统地去建立对于他们的认识，也可能是因为大一的时候对于C、C++的书本式学习让我轻视了他们，但是作为无数程序员入门的程序设计语言而言，这两门语言总是有不同的意味存在。。。</p>
+</blockquote>
+<p><em><strong>当然了，在此也感谢那些年帮助过我的 网络导师&#x2F;网站&#x2F;网课 们，也正是这些网络资源的存在，才能让菜鸟新手更快地入手程序设计，并且进入到编程的美丽世界中 ~</strong></em></p>
+<p>🤞 致谢：<a href="https://www.bilibili.com/video/BV1et411b73Z/?spm_id_from=333.337.search-card.all.click&vd_source=1f1317f0ea5f93ca4221e529d0bde2da">黑马程序员</a>、<a href="https://www.runoob.com/cplusplus/cpp-tutorial.html">菜鸟教程</a>、<a href="https://www.liaoxuefeng.com/">廖雪峰老师的博客</a> 🤞</p>
+<h1 id="快速入门"><a href="#快速入门" class="headerlink" title="快速入门"></a>快速入门</h1><h2 id="常见头文件"><a href="#常见头文件" class="headerlink" title="常见头文件"></a>常见头文件</h2><p><em>这里也是直接给出 C、C++ 头文件的模板</em></p>
+<blockquote>
+<p>一个提醒：少用万能头文件，一般来说，非 考试&#x2F;竞赛 ，最好别用</p>
+<p>原因：会增加编译时间，其次就是有的环境可能不支持，并且还不可移植</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;bits/stdc++.h&gt;</span><span class="comment">//万能头文件</span></span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="C"><a href="#C" class="headerlink" title="C"></a>C</h3><p>常用于单片机，特别是51单片机，当然了单片机中也有自己不同于纯粹的C语言的地方所在，这就需要在实践中才能体会得到了。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;studio&gt;</span><span class="comment">//包含：输入scanf、输出printf等</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;math.h&gt;</span><span class="comment">//一些常见的数学运算函数</span></span></span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="C-1"><a href="#C-1" class="headerlink" title="C++"></a>C++</h3><p>用途广泛，也能用于一些单片机，如STM32，并且具有一些C不具有的方便特性，总体来说，是向C语言兼容的，这保证了能使用C语言的许多特性。</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;iostream&gt;</span><span class="comment">//头文件，给予使用部分功能的权限 </span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;<span class="comment">//为了解决命名冲突的问题而引入的概念 </span></span><br><span class="line"><span class="comment">//前面两行声明包含：标准输入/输出流对象（cin、cout）</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><em>问：iostream 是在 STL 之前就诞生了，为什么 iostream 也要放进 std ？</em></p>
+<p><em>答：事实上，在当初还没有标准库的时候，iostream 库真就是直接用的。不需要加 std 。那时候的标准用法还是 #include &lt;iostream.h&gt; 如果你这样用，那就确实不需要加 std 。</em></p>
+<p><em>【C++标准程序库中的所有标识符都被定义于一个名为std的namespace中（与#include&lt;&gt;概念上类似）】</em></p>
+<p><em>后来有了 STL 之后，为了统一起见，就把 iostream 库也放进了 std，写法也去掉了后缀成为 #include <iostream>。</iostream></em></p>
+<p><em>但如果你还需要兼容旧有代码，如果你的代码是在还没有发明 std namepsace 之前撰写的，那可以使用 #include &lt;iostream.h&gt; 这种带后缀的形式，这种形式是不需要加 std 的。</em></p>
+<p><strong>结论：现代C++，想用cin、cout都需要用到这两行声明</strong></p>
+</blockquote>
+<h2 id="语法与特性"><a href="#语法与特性" class="headerlink" title="语法与特性"></a>语法与特性</h2><p>这里就不多加强调了，无非就是循环、选择等结构，再加上一些函数的调用及传参</p>
+<blockquote>
+<p>故：在此也只重点强调我之前 忘记 或 忽略 的语法及用法</p>
+</blockquote>
+<h3 id="参数传递"><a href="#参数传递" class="headerlink" title="参数传递"></a>参数传递</h3><p>往函数中传递参数并在函数中进行这些传递的参数的运算 是经常我们需要函数为我们做的工作，但是我们必须要充分了解 <strong>形式参数、实际参数</strong> 的概念，才能更好的掌握运用函数</p>
+<p>在这里直接给出两个例子</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">//利用”指针“传递地址</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">test</span><span class="params">(<span class="type">int</span> *a)</span> </span>&#123;</span><br><span class="line">	*a = <span class="number">100</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">	<span class="type">int</span> b = <span class="number">200</span>;</span><br><span class="line">	<span class="built_in">test</span>(&amp;b);<span class="comment">//&amp;b是在求变量b的地址，此处是传入函数变量的地址（&amp;b）到函数中</span></span><br><span class="line">	cout &lt;&lt; b &lt;&lt; endl; <span class="comment">//结果为：100</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>这里不利用 ”指针“ 或 ”引用“ 方法，就不能让传递到函数内的形式参数被实际的改变值，因为不采用这两种方法时，参数值是被复制到栈区的新建数据中，等此次函数结束后就被释放了，根本就不涉及实际参数的值的变化；</p>
+<p>而使用 ”指针“ 或 ”引用“ 方法，从本质上来说都是让函数直接涉及到传入变量的真正的地址去进行操作，自然能够对变量进行真正的改变。</p>
+</blockquote>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">//利用”引用“对变量进行操作</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">test</span><span class="params">(<span class="type">int</span> &amp;a)</span> </span>&#123;</span><br><span class="line">	a = <span class="number">100</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">	<span class="type">int</span> b = <span class="number">200</span>;</span><br><span class="line">	<span class="built_in">test</span>(b);<span class="comment">//&amp;b是在求变量b的地址，此处是传入函数变量的地址（&amp;b）到函数中</span></span><br><span class="line">	cout &lt;&lt; b &lt;&lt; endl; <span class="comment">//结果为：100</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="字符与整型"><a href="#字符与整型" class="headerlink" title="字符与整型"></a>字符与整型</h3><p>字符型与整型转换，实际上就是ascii码间的转换</p>
+<p>且字符都是按照ASCII码来排序的<em><strong>【小写字母英文字母比大写英文字母大32】</strong></em></p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/Ascii.png" alt="Ascii"></p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">//pl1</span></span><br><span class="line">	<span class="type">char</span> x =‘a<span class="number">&#x27;</span>;</span><br><span class="line">	cout&lt;&lt;  x<span class="number">-1</span> ;  <span class="comment">//输出结果是字符a的ascii码减去1  </span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">//pl2:</span></span><br><span class="line">	<span class="type">char</span> c1=<span class="string">&#x27;a&#x27;</span> ;</span><br><span class="line">	<span class="type">char</span> c2=<span class="string">&#x27;A&#x27;</span> ;</span><br><span class="line">	cout&lt;&lt;c1&lt;&lt;<span class="string">&quot; &quot;</span>&lt;&lt;c2;<span class="comment">//输出结果是 a A</span></span><br><span class="line">	c1=c1<span class="number">-32</span>;<span class="comment">//变为大写字符A的ascii码:小写字母a的ascii码减少32</span></span><br><span class="line">	c2=c2+<span class="number">32</span>;<span class="comment">//变成另外的字符【详情见ASCII表】</span></span><br><span class="line"><span class="comment">//注意：此处是由于对char型字符进行了+-运算，才使其强转为其对应ascii码并进行ascii码间的+-运算</span></span><br></pre></td></tr></table></figure>
+
+<p>这里再给出一个例子：</p>
+<p>  ‘a’ 如果用于运算，则代表的是它所对应的ascii码之间的运算<br>如：</p>
+<ul>
+<li><code>char</code> 转换到 <code>int</code> 的变化</li>
+</ul>
+<p>  ‘3’ - ‘0’ 代表的是字符型的 3 和 0 的ascii码之间的差值&#x3D; <code>int</code> 型数字的3【即两个字符的ASCII码之间的差值】</p>
+<ul>
+<li>而 3 + ‘0’ 则完成了 <code>int</code> 转变为 <code>char</code> 的变化</li>
+</ul>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;                                                  </span><br><span class="line">    <span class="comment">//在此处，如果char型x为字母a，则输出的整型数h的值为a的ascii码与0的ascii码的差值	</span></span><br><span class="line">    <span class="type">char</span> x;              </span><br><span class="line">	<span class="type">int</span> h = <span class="number">0</span>;</span><br><span class="line">	<span class="type">char</span> s ;</span><br><span class="line">	cin &gt;&gt; x;</span><br><span class="line">	h = x - <span class="string">&#x27;0&#x27;</span>;</span><br><span class="line">    <span class="comment">//而s则为重新转换为char型的过程</span></span><br><span class="line">	s = h + <span class="string">&#x27;0&#x27;</span>;</span><br><span class="line">	cout &lt;&lt; h &lt;&lt; endl;</span><br><span class="line">	cout &lt;&lt; s;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="I-x2F-O"><a href="#I-x2F-O" class="headerlink" title="I&#x2F;O"></a>I&#x2F;O</h3><p>不论是实际运用中的调试，还是算法刷题，I&#x2F;O可以说是不可或缺的一环，换句话说，熟练使用I&#x2F;O，你至少能够做一个I&#x2F;O自由的程序员，而不是做一个编程世界的“哑巴”。😬</p>
+<h4 id="cin、cout"><a href="#cin、cout" class="headerlink" title="cin、cout"></a>cin、cout</h4><blockquote>
+<p>C++独有特性</p>
+</blockquote>
+<p>**C++**只要涉及输入或者输出数据，我们立马想到的就是 cin 和 cout。</p>
+<p>其实，cin 就是 istream 类的对象，cout 是 ostream 类的对象，它们都声明在 <code>&lt;iostream&gt;</code> 头文件中，这也解释了“为什么在 C++ 程序中引入 <code>&lt;iostream&gt;</code> 就可以使用 cin 和 cout”</p>
+<p>（当然，使用 cin 和 cout，还需要声明 std 命名空间,它们都是 C++ 标准库的开发者创建好的，可以直接拿来使用，这种在 C++ 中提前创建好的对象称为内置对象）。</p>
+<h5 id="cout运用"><a href="#cout运用" class="headerlink" title="cout运用"></a>cout运用</h5><table>
+<thead>
+<tr>
+<th></th>
+<th>定义</th>
+<th>原理</th>
+<th>输出对象</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>cout<br>流对象</td>
+<td>cout 是 console output 的缩写，意为在控制台（终端显示器）的输出。<br>cout 流是容纳数据的载体，它并不是一个运算符。<br>人们关心的是 cout 流中的内容，也就是向显示器输出什么。</td>
+<td>cout 流在内存中对应开辟了一个缓冲区，用来存放流中的数据，当向 cout 流插入一个endl 时，不论缓冲区是否已满，都立即输出流中所有数据，然后插入一个换行符， 并刷新流（清空缓冲区）。</td>
+<td>cout 流通常是传送到显示器输出，但也可以被重定向 输出到磁盘文件</td>
+</tr>
+</tbody></table>
+<h6 id="运用案例"><a href="#运用案例" class="headerlink" title="运用案例"></a>运用案例</h6><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">cout&lt;&lt;<span class="built_in">setiosflags</span>(ios::left|ios::showpoint);  <span class="comment">// 设左对齐，以一般实数方式显示</span></span><br><span class="line">   cout.<span class="built_in">precision</span>(<span class="number">5</span>);       <span class="comment">// 设置五位有效数字 </span></span><br><span class="line">   cout&lt;&lt;<span class="number">123.456789</span>&lt;&lt;endl;</span><br><span class="line"></span><br><span class="line">   cout.<span class="built_in">width</span>(<span class="number">10</span>);          <span class="comment">// 设置显示域宽10 </span></span><br><span class="line">   cout.<span class="built_in">fill</span>(<span class="string">&#x27;*&#x27;</span>);          <span class="comment">// 在显示区域空白处用*填充</span></span><br><span class="line">   cout&lt;&lt;<span class="built_in">resetiosflags</span>(ios::left);  <span class="comment">// 清除状态左对齐</span></span><br><span class="line">   cout&lt;&lt;<span class="built_in">setiosflags</span>(ios::right);   <span class="comment">// 设置右对齐</span></span><br><span class="line">   cout&lt;&lt;<span class="number">123.456789</span>&lt;&lt;endl;</span><br><span class="line"></span><br><span class="line">   cout&lt;&lt;<span class="built_in">setiosflags</span>(ios::left|ios::fixed);    <span class="comment">// 设左对齐，以固定小数位显示</span></span><br><span class="line">   cout.<span class="built_in">precision</span>(<span class="number">3</span>);    <span class="comment">// 设置实数显示三位小数</span></span><br><span class="line">   cout&lt;&lt;<span class="number">999.123456</span>&lt;&lt;endl; </span><br><span class="line"></span><br><span class="line">   cout&lt;&lt;<span class="built_in">resetiosflags</span>(ios::left|ios::fixed);  <span class="comment">//清除状态左对齐和定点格式</span></span><br><span class="line">   cout&lt;&lt;<span class="built_in">setiosflags</span>(ios::left|ios::scientific);    <span class="comment">//设置左对齐，以科学技术法显示 </span></span><br><span class="line">   cout.<span class="built_in">precision</span>(<span class="number">3</span>);   <span class="comment">//设置保留三位小数</span></span><br><span class="line">   cout&lt;&lt;<span class="number">123.45678</span>&lt;&lt;endl;</span><br><span class="line"></span><br><span class="line">   cout &lt;&lt; fixed &lt;&lt; <span class="built_in">setprecision</span>(<span class="number">4</span>) &lt;&lt; value &lt;&lt; endl; </span><br><span class="line">   <span class="comment">// 加了fixed意味着是固定点方式显示，所以这里的精度指的是小数位，输出为12.3457</span></span><br></pre></td></tr></table></figure>
+
+<p>输出</p>
+<figure class="highlight powershell"><table><tr><td class="code"><pre><span class="line"><span class="number">123.46</span></span><br><span class="line">****<span class="number">123.46</span></span><br><span class="line"><span class="number">999.123</span></span><br><span class="line"><span class="number">1.235</span>e+<span class="number">02</span></span><br><span class="line"><span class="number">12.3457</span></span><br></pre></td></tr></table></figure>
+
+<h6 id="cout-setself-常见的标志"><a href="#cout-setself-常见的标志" class="headerlink" title="cout.setself 常见的标志"></a>cout.setself 常见的标志</h6><blockquote>
+<p>cout.oct、cout.scientific等</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th align="left">标志</th>
+<th align="left">功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">oct</td>
+<td align="left">用八进制格式显示数值.</td>
+</tr>
+<tr>
+<td align="left">dec</td>
+<td align="left">用十进制格式显示数值.</td>
+</tr>
+<tr>
+<td align="left">hex</td>
+<td align="left">用十六进制格式显示数值.</td>
+</tr>
+<tr>
+<td align="left">scientific</td>
+<td align="left">用科学记数法显示浮点数.</td>
+</tr>
+<tr>
+<td align="left">fixed</td>
+<td align="left">用正常的记数方法显示浮点数(与科学计数法相对应).</td>
+</tr>
+<tr>
+<td align="left">showpoint</td>
+<td align="left">显示小数点和额外的零，即使不需要.</td>
+</tr>
+<tr>
+<td align="left">showpos</td>
+<td align="left">在非负数值前面显示”＋（正号）”.</td>
+</tr>
+<tr>
+<td align="left">skipws</td>
+<td align="left">当从一个流进行读取时，跳过空白字符(spaces, tabs, newlines).</td>
+</tr>
+<tr>
+<td align="left">unitbuf</td>
+<td align="left">在每次插入以后，清空缓冲区.</td>
+</tr>
+</tbody></table>
+<h6 id="iostream-中定义的操作符："><a href="#iostream-中定义的操作符：" class="headerlink" title="iostream 中定义的操作符："></a>iostream 中定义的操作符：</h6><table>
+<thead>
+<tr>
+<th align="left">操作符</th>
+<th align="left">描述</th>
+<th align="left">输入</th>
+<th align="left">输出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">dec</td>
+<td align="left">启用dec标志</td>
+<td align="left">√</td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">endl</td>
+<td align="left">输出换行标示，并清空缓冲区</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">ends</td>
+<td align="left">输出空字符</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">fixed</td>
+<td align="left">启用fixed标志</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">flush</td>
+<td align="left">清空流</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">hex</td>
+<td align="left">启用 hex 标志</td>
+<td align="left">√</td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">left</td>
+<td align="left">启用 left 标志</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">noshowpoint</td>
+<td align="left">关闭showpoint 标志</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">noshowpos</td>
+<td align="left">关闭showpos 标志</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">noskipws</td>
+<td align="left">关闭skipws 标志</td>
+<td align="left">√</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">nounitbuf</td>
+<td align="left">关闭unitbuf 标志</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">oct</td>
+<td align="left">启用 oct 标志</td>
+<td align="left">√</td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">right</td>
+<td align="left">启用 right 标志</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">scientific</td>
+<td align="left">启用 scientific 标志</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">showpoint</td>
+<td align="left">启用 showpoint 标志</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">showpos</td>
+<td align="left">启用 showpos 标志</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">skipws</td>
+<td align="left">启用 skipws 标志</td>
+<td align="left">√</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">unitbuf</td>
+<td align="left">启用 unitbuf 标志</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">ws</td>
+<td align="left">跳过所有前导空白字符</td>
+<td align="left">√</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<h6 id="iomanip-中定义的操作符："><a href="#iomanip-中定义的操作符：" class="headerlink" title="iomanip 中定义的操作符："></a>iomanip 中定义的操作符：</h6><table>
+<thead>
+<tr>
+<th align="left">操作符</th>
+<th align="left">描述</th>
+<th align="left">输入</th>
+<th align="left">输出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">setfill(int ch)</td>
+<td align="left">设置填充字符为ch</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">setprecision(int p)</td>
+<td align="left">设置数值的精度(四舍五入)</td>
+<td align="left"></td>
+<td align="left">√</td>
+</tr>
+<tr>
+<td align="left">setw(int w)</td>
+<td align="left">设置域宽度为w</td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong><code>cin</code>同理</strong></p>
+</blockquote>
+<h5 id="cin运用"><a href="#cin运用" class="headerlink" title="cin运用"></a>cin运用</h5><ul>
+<li><p>普通输入时：<code>cin&gt;&gt;</code> 自动跳过“tab，回车，空格”来读取要输入的内容</p>
+</li>
+<li><p>不想略过空白字符，那就使用 noskipws 流控制。如<code>cin&gt;&gt;noskipws&gt;&gt;input</code>的值 </p>
+</li>
+<li><p><code>getline(cin,test)</code>：将缓冲区内的内容存储到到test参数中（包括空格 换行符等）不阻塞，直接读取缓冲区的数据（如果缓冲区中有数据的话：包括换行符和空格等）</p>
+</li>
+<li><p><code>cin.get</code>的用法</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="type">char</span> a;</span><br><span class="line">a = cin.<span class="built_in">get</span>();</span><br><span class="line"><span class="comment">//或 cin.get(a);</span></span><br><span class="line">cout&lt;&lt;a&lt;&lt;endl;</span><br></pre></td></tr></table></figure>
+
+<p>只读取一个字符，可以使用<code>cin.get</code> 或 <code>cin.get(var)</code></p>
+<ul>
+<li><p><code>cin.get()</code>的返回值是<code>int</code>类型，成功：读取字符的ASCII码值，遇到文件结束符时，返回EOF，即-1</p>
+</li>
+<li><p><code>cin.get(char var)</code>如果成功返回的是<code>cin</code>对象</p>
+</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>说明：</p>
+<p>（1）<code>cin.get()</code>从输入缓冲区读取单个字符时是不忽略分隔符的【包括换行符、tab、空格等】，会直接将其读取（读入缓冲区）</p>
+<p>（2）<code>cin.get()</code> 和 <code>scanf(&quot;%s %s&quot;, ch1, ch2) != EOF</code>  一个道理，</p>
+<p>如这个表达式：<code>scanf(&quot;%d%d&quot;,&amp;a,&amp;b)!=EOF;</code></p>
+<p>如果a和b都被成功读入，那么上面表达式的结果为2；</p>
+<p>如果只有一个读入，那么上面表达式的结果为1；</p>
+<p>如果 a 和 b 都没有读入，那么上面表达式的结果为0（若a没有读入，则直接放弃b的读入）；</p>
+<p>如果遇到 错误 或 <strong>文件结尾</strong> ，那么上面表达式的结果为EOF，对应的有符号数是 -1；</p>
+<p>【Windows下标准输入输入文件结束符为Ctrl+z，Linux为Ctrl+d】</p>
+<ul>
+<li><p>问：那么什么时候会输出EOF? </p>
+<p>答：在stdio.h中 <code>EOF</code> 被宏定义为 -1，按照说明，scanf函数只有在第一个参数为NULL(空指针)的情况下，才可能返回EOF，否则，返回成功格式化并赋值的参数个数(&gt;&#x3D;0)。（回车就相当于第一个参数为NULL）</p>
+</li>
+</ul>
+</blockquote>
+<ul>
+<li><code>cin.getline</code>读取一行</li>
+</ul>
+<p>  函数作用：从标准输入设备键盘读取一串字符串，并以指定的结束符结束。</p>
+<blockquote>
+<p><code>cin.getline</code> 与 <code>cin.get</code> 的区别:</p>
+<p><code>cin.getline</code>不会将结束符或者换行符残留在输入缓冲区中。</p>
+</blockquote>
+  <figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">cin.<span class="built_in">getline</span>(array,<span class="number">20</span>); </span><br><span class="line"><span class="comment">//或 使用下面一行来指定结束符</span></span><br><span class="line"> <span class="comment">//cin.getline(array,20,&#x27;\n&#x27;);</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="常见排序算法"><a href="#常见排序算法" class="headerlink" title="常见排序算法"></a>常见排序算法</h2><h3 id="插入排序"><a href="#插入排序" class="headerlink" title="插入排序"></a>插入排序</h3><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">```</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">### 冒泡排序</span><br><span class="line"></span><br><span class="line">```c++</span><br><span class="line"><span class="comment">//数组a[]中有10个元素</span></span><br><span class="line"><span class="type">int</span> a[<span class="number">10</span>] = &#123;<span class="number">0</span>&#125;;</span><br><span class="line"><span class="type">int</span> k=<span class="number">0</span>;</span><br><span class="line"><span class="type">int</span> len = <span class="built_in">sizeof</span>(a)/<span class="built_in">sizeof</span>(<span class="number">1</span>);</span><br><span class="line"><span class="keyword">while</span>(len--) cin&gt;&gt;a[k++];</span><br><span class="line"><span class="comment">//len个元素只需要len-1次排序即可排序完成</span></span><br><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="number">10</span>; i++)&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> j=<span class="number">0</span>; j&lt;<span class="number">9</span>-i; j++)&#123;</span><br><span class="line">        <span class="comment">//这里是升序排序，如需降序排序则改变判断条件即可</span></span><br><span class="line">        <span class="keyword">if</span>(a[j]&gt;a[j+<span class="number">1</span>]) <span class="built_in">swap</span>(a[j],a[j+<span class="number">1</span>]);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="number">10</span>; i++) cout&lt;&lt;a[i]&lt;&lt;<span class="string">&quot; &quot;</span>;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="快速排序"><a href="#快速排序" class="headerlink" title="快速排序"></a>快速排序</h3><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">//升序合并</span></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">hebing</span><span class="params">(<span class="type">int</span> a[], <span class="type">int</span> l, <span class="type">int</span> r)</span></span>&#123;</span><br><span class="line">    <span class="type">int</span> mid = a[l]; <span class="comment">//保存中枢元素</span></span><br><span class="line">	<span class="keyword">while</span> (l &lt; r) &#123;</span><br><span class="line">		<span class="keyword">while</span> (a[r] &gt;= mid &amp;&amp; l &lt; r) r--;</span><br><span class="line">		a[l] = a[r];<span class="comment">//将比mid小的元素放到左端</span></span><br><span class="line">		<span class="keyword">while</span> (a[l] &lt;= mid &amp;&amp; l &lt; r) l++;</span><br><span class="line">		a[r] = a[l];<span class="comment">//将比mid大的元素放到右端</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//完成循环后l==r,即：到达了此次排序中枢元素mid的最终位置</span></span><br><span class="line">	a[l] = mid;<span class="comment">//将此次排序中的中枢元素mid放到他的最终位置上</span></span><br><span class="line">	<span class="keyword">return</span> l;<span class="comment">//并返回这个最终位置【数组被这个最终位置分为两个部分：左半部分&lt;mid，右半部分&gt;mid】</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//降序合并</span></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">rhebing</span><span class="params">(<span class="type">int</span> a, <span class="type">int</span> l, <span class="type">int</span> r)</span></span>&#123;</span><br><span class="line">    <span class="type">int</span> mid = a[l];</span><br><span class="line">	<span class="keyword">while</span> (l &lt; r) &#123;</span><br><span class="line">		<span class="keyword">while</span> (a[r] &lt;= mid &amp;&amp; l &lt; r) r--;</span><br><span class="line">		a[l] = a[r];<span class="comment">//将比mid大的放到左端</span></span><br><span class="line">		<span class="keyword">while</span> (a[l] &gt;= mid &amp;&amp; l &lt; r) l++;</span><br><span class="line">		a[r] = a[l];<span class="comment">//将比mid小的放到右端</span></span><br><span class="line">	&#125;</span><br><span class="line">	a[l] = mid;</span><br><span class="line">	<span class="keyword">return</span> l;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//升序(递归)快速排序</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">qsort</span><span class="params">(<span class="type">int</span> a[], <span class="type">int</span> l,<span class="type">int</span> r)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (l &gt;= r) <span class="keyword">return</span>;</span><br><span class="line">	<span class="type">int</span> m = <span class="built_in">hebing</span>(a, l, r);</span><br><span class="line">	<span class="built_in">qsort</span>(a, l, m - <span class="number">1</span>);</span><br><span class="line">	<span class="built_in">qsort</span>(a, m + <span class="number">1</span>, r);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//降序(递归)快速排序</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">rqsort</span><span class="params">(<span class="type">int</span> a[], <span class="type">int</span> l, <span class="type">int</span> r)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (l &gt;= r) <span class="keyword">return</span>;</span><br><span class="line">	<span class="type">int</span> m = <span class="built_in">rhebing</span>(a, l, r);</span><br><span class="line">	<span class="built_in">rqsort</span>(a, l, m - <span class="number">1</span>);</span><br><span class="line">	<span class="built_in">rqsort</span>(a, m + <span class="number">1</span>, r);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="type">int</span> a[] = &#123; <span class="number">40</span>,<span class="number">34</span>,<span class="number">201</span>,<span class="number">54</span>,<span class="number">11</span>,<span class="number">21</span>,<span class="number">20</span>,<span class="number">34</span>,<span class="number">6</span>,<span class="number">76</span> &#125;;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;升序-排序 前:\n&quot;</span>);</span><br><span class="line">	<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%d &quot;</span>, a[i]);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;升序-排序 后:\n&quot;</span>);</span><br><span class="line">	<span class="built_in">qsort</span>(a, <span class="number">0</span>, <span class="number">9</span>);</span><br><span class="line">	<span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="number">10</span>; i++)&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;%d &quot;</span>, a[i]);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;降序-排序 后:\n&quot;</span>);</span><br><span class="line">	<span class="built_in">rqsort</span>(a, <span class="number">0</span>, <span class="number">9</span>);</span><br><span class="line">	<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;%d &quot;</span>, a[i]);</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+<h3 id="常见函数使用"><a href="#常见函数使用" class="headerlink" title="常见函数使用"></a>常见函数使用</h3><h4 id="向上求整数"><a href="#向上求整数" class="headerlink" title="向上求整数"></a>向上求整数</h4><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;math.h&gt;</span></span></span><br><span class="line"></span><br><span class="line">t=<span class="built_in">ceil</span>(s/v)；</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>c++中默认是向下求整，即会忽略余数，而使用ceil( )函数后，会使余数进一，以达到向上取整的效果</p>
+</blockquote>
+<h3 id><a href="#" class="headerlink" title></a></h3><h3 id="-1"><a href="#-1" class="headerlink" title></a></h3>]]></content>
       <categories>
         <category>算法</category>
       </categories>
       <tags>
-        <tag>java</tag>
+        <tag>c++</tag>
       </tags>
   </entry>
   <entry>
@@ -2112,6 +2915,681 @@
       </categories>
       <tags>
         <tag>Memories</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>QT之二进门</title>
+    <url>/leiblog/2026/06/16/QT%E4%B9%8B%E4%BA%8C%E8%BF%9B%E9%97%A8/</url>
+    <content><![CDATA[<h2 id="实训第一天"><a href="#实训第一天" class="headerlink" title="实训第一天"></a>实训第一天</h2><h4 id="内容"><a href="#内容" class="headerlink" title="内容"></a>内容</h4><h5 id="虚拟机环境搭建"><a href="#虚拟机环境搭建" class="headerlink" title="虚拟机环境搭建"></a>虚拟机环境搭建</h5><p>搭建了含有 后期使用硬件中所需的编译环境 的qt creator</p>
+<h5 id="qt槽函数初认识"><a href="#qt槽函数初认识" class="headerlink" title="qt槽函数初认识"></a>qt槽函数初认识</h5><p>主要是一些槽函数的基础认识</p>
+<p>弹窗 ui界面的认识</p>
+<h4 id="作业"><a href="#作业" class="headerlink" title="作业"></a>作业</h4><p>在弹窗中完成有 基础功能的+、-、*、&#x2F;、退位、显示结果 的计算器的ui界面（用的是很丑陋的手动拖拽方式）</p>
+<h4 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h4><p>弹窗分辨率自适应</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">QGuiApplication::<span class="built_in">setAttribute</span>(Qt::AA_EnableHighDpiScaling);</span><br></pre></td></tr></table></figure>
+
+<p>槽函数clicked( )完成对开灯关灯以及语音读出</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">//单击按钮就被点击，点击后就自动执行该函数</span></span><br><span class="line"><span class="comment">//QT       += texttospeech</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">MainWindow::on_pbLED_clicked</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"><span class="comment">//    this-&gt;ui-&gt;pbLED-&gt;setText(&quot;点击就完事&quot;);</span></span><br><span class="line">    <span class="keyword">if</span>(flag)&#123;</span><br><span class="line">        ui-&gt;pb_e-&gt;<span class="built_in">setText</span>(<span class="string">&quot;开灯模式&quot;</span>);</span><br><span class="line">        ts-&gt;<span class="built_in">say</span>(<span class="string">&quot;led on&quot;</span>);</span><br><span class="line">        flag = <span class="literal">false</span>;</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        ui-&gt;pb_e-&gt;<span class="built_in">setText</span>(<span class="string">&quot;关灯模式&quot;</span>);</span><br><span class="line">        <span class="comment">//还可以调用语音来进行提醒：ts-&gt;say(&quot; &quot;)</span></span><br><span class="line">        ts-&gt;<span class="built_in">say</span>(<span class="string">&quot;led_off&quot;</span>);</span><br><span class="line">        flag = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="实训第二天"><a href="#实训第二天" class="headerlink" title="实训第二天"></a>实训第二天</h2><h4 id="内容-1"><a href="#内容-1" class="headerlink" title="内容"></a>内容</h4><p>利用layout结合程式构建ui</p>
+<p>1、自定义槽函数</p>
+<h6 id="声明"><a href="#声明" class="headerlink" title="声明"></a>声明</h6><h6 id="关联槽函数及使用槽函数"><a href="#关联槽函数及使用槽函数" class="headerlink" title="关联槽函数及使用槽函数"></a>关联槽函数及使用槽函数</h6><h6 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h6><p>对data数字button按键的处理</p>
+<p>对操作button按键的处理</p>
+<p>关联槽函数</p>
+<h2 id="实训第三天"><a href="#实训第三天" class="headerlink" title="实训第三天"></a>实训第三天</h2><h4 id="内容-2"><a href="#内容-2" class="headerlink" title="内容"></a>内容</h4><h5 id="tcp连接"><a href="#tcp连接" class="headerlink" title="tcp连接"></a>tcp连接</h5><p>使用面向连接的tcp来实现c&#x2F;s模式【要求两个端必须各有其独立的窗口】</p>
+<p>通过Qt来制作不同的窗口来模拟客户端和服务器端</p>
+<p>（服务器的功能是实现回显）</p>
+<h4 id="作业-1"><a href="#作业-1" class="headerlink" title="作业"></a>作业</h4><p>完成客户端窗口、服务端窗口及对应按键的功能实现</p>
+<p><code>左侧为客户端，右侧为服务端</code></p>
+<h5 id="客户端窗口："><a href="#客户端窗口：" class="headerlink" title="客户端窗口："></a>客户端窗口：</h5><p>（1）使用QTcpserver对象以及QTcpSocket构建TCP连接</p>
+<p>【QTcpserver对象用于创建连接；QTcpSocket对象用于通信】</p>
+<p>（2）失能使能 按钮【send、connect】</p>
+<p>（3）先connect连接到服务器server端【需要ip及port】</p>
+<p>连接成功后，即可进行c&#x2F;s通信（read&#x2F;write）</p>
+<h5 id="服务端窗口："><a href="#服务端窗口：" class="headerlink" title="服务端窗口："></a>服务端窗口：</h5><p>接受来自于客户端的信息并显示</p>
+<h2 id="实训第四天"><a href="#实训第四天" class="headerlink" title="实训第四天"></a>实训第四天</h2><h4 id="内容-3"><a href="#内容-3" class="headerlink" title="内容"></a>内容</h4><h5 id="调用百度识图"><a href="#调用百度识图" class="headerlink" title="调用百度识图"></a>调用百度识图</h5><p>百度识图接入、鉴权及调用</p>
+<p><code>QEventLoop loop</code> 是事件循环，用于等待百度的响应到来</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">    <span class="comment">//获取token值</span></span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">http::getToken</span><span class="params">(QString &amp; token)</span></span>&#123;</span><br><span class="line">    <span class="comment">//获取url</span></span><br><span class="line">    QString url = <span class="built_in">QString</span>(token_url).<span class="built_in">arg</span>(AK).<span class="built_in">arg</span>(SK);</span><br><span class="line">    <span class="comment">//准备对目标url发起POST请求</span></span><br><span class="line">    QNetworkAccessManager manager;</span><br><span class="line">    <span class="comment">//构建起请求的格式</span></span><br><span class="line">    QNetworkRequest request;</span><br><span class="line">    <span class="comment">//构建起http的格式头</span></span><br><span class="line">        <span class="comment">//按照百度给出的api来进行设置</span></span><br><span class="line">    request.<span class="built_in">setRawHeader</span>(<span class="string">&quot;Content-Type&quot;</span>, <span class="string">&quot;pplication/json&quot;</span>);</span><br><span class="line">    request.<span class="built_in">setRawHeader</span>(<span class="string">&quot;Accept&quot;</span>, <span class="string">&quot;pplication/json&quot;</span>);</span><br><span class="line">    <span class="comment">//设置请求的url</span></span><br><span class="line">    request.<span class="built_in">setUrl</span>(<span class="built_in">QUrl</span>(url));</span><br><span class="line">    <span class="comment">//发起post请求，body为图片内容</span></span><br><span class="line">    QNetworkReply *reply = manager.<span class="built_in">post</span>(request, <span class="string">&quot;&quot;</span>);<span class="comment">//无body的post请求</span></span><br><span class="line">    <span class="comment">//建立事件循环以等待来自网站的响应</span></span><br><span class="line">    QEventLoop loop;</span><br><span class="line">    <span class="comment">//当网站响应结束后，就退出事件循环</span></span><br><span class="line">    <span class="built_in">connect</span>(reply, <span class="built_in">SIGNAL</span>(<span class="built_in">finished</span>()), &amp;loop, <span class="built_in">SLOT</span>(<span class="built_in">quit</span>()));</span><br><span class="line">    <span class="comment">//开启事件循环</span></span><br><span class="line">    loop.<span class="built_in">exec</span>();    <span class="comment">//类似与while(1)</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//当有响应返回时：</span></span><br><span class="line">    <span class="keyword">if</span>(reply != <span class="literal">NULL</span> &amp;&amp; reply-&gt;<span class="built_in">error</span>() == QNetworkReply::NoError)&#123;</span><br><span class="line">        QByteArray ba = reply-&gt;<span class="built_in">readAll</span>();<span class="comment">//收到的ba是一个字节数组</span></span><br><span class="line">        <span class="comment">//qDebug() &lt;&lt; &quot;token:&quot; &lt;&lt; QString(ba);</span></span><br><span class="line">        <span class="comment">//先将收到的数据转换成JSON对象</span></span><br><span class="line">        QJsonObject obj = QJsonDocument::<span class="built_in">fromJson</span>(ba).<span class="built_in">object</span>();</span><br><span class="line">        <span class="comment">//根据key值得到value然后转成QString，获取到token值</span></span><br><span class="line">        token = obj.<span class="built_in">value</span>(<span class="string">&quot;access_token&quot;</span>).<span class="built_in">toString</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//qDebug() &lt;&lt; &quot;token err&quot;;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="实训第五天"><a href="#实训第五天" class="headerlink" title="实训第五天"></a>实训第五天</h2><h2 id="内容-4"><a href="#内容-4" class="headerlink" title="内容"></a>内容</h2><h3 id="Json格式"><a href="#Json格式" class="headerlink" title="Json格式"></a>Json格式</h3><blockquote>
+<p>示例：</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="string">&quot;</span></span><br><span class="line"><span class="string">&#123;\&quot;result\&quot;:[</span></span><br><span class="line"><span class="string"> &#123;</span></span><br><span class="line"><span class="string"> \&quot;score\&quot;:0.66200465,</span></span><br><span class="line"><span class="string"> \&quot;name\&quot;:\&quot;月季花\&quot;,</span></span><br><span class="line"><span class="string"> \&quot;baike_info\&quot;:&#123;</span></span><br><span class="line"><span class="string">\&quot;baike_url\&quot;:\&quot;http://baike.baidu.com/item/%E6%9C%88%E5%AD%A3%E8%8A%B1/14505544\&quot;,</span></span><br><span class="line"><span class="string">\&quot;image_url\&quot;:\&quot;https://bkimg.cdn.bcebos.com/pic/b3b7d0a20cf431adcbefa49ccc60bbaf2edda3cc3245\&quot;,</span></span><br><span class="line"><span class="string"> \&quot;description\&quot;:\&quot;月季花(Rosa chinensis Jacq.)是蔷薇科属的常绿、半常绿低矮灌木。叶子为羽状复叶，表面深绿有光泽而叶背青白，且无毛面具有小托叶。花分单瓣和重瓣，重瓣色为深红且略似玫瑰。花色以红色为主，其他有白、黄、粉红、玫瑰红等。蔷薇果卵圆形或梨形，熟时红色。自然花期4月-9月。月季花，以一年四季不分春、夏、秋、冬皆能见花而得名，又以其每月近乎开花一次而得名“月月红”“长春花”。中国是月季花的原产地之一，在中国主要分布于湖北、四川和甘肃等省的山区。月季花适应性强，耐寒、耐旱，对土壤要求不严格，但以富含有机质、排水良好的微带酸性沙壤土最好。喜欢阳光充足，温暖湿润的气候，一般22~25℃为花生长的最适宜温度。月季花可利用播种与扦插进行栽培繁殖。月季花的药用价植最早载于李时珍的《本草纲目》，他认为月季花具有“活血、消肿、傅毒”的功效，由于其活血化疲之功尤佳，故为妇科良药。月季栽培历史悠久，文化底蕴深厚，始于唐宋，兴于明清，发展于当代。而杨万里云：“只道花无十日红，此花无日不春风。别有香超桃李外，更同梅斗雪霜中。”把月季花期之长、色香之妙，包括无遗。\&quot;&#125;</span></span><br><span class="line"><span class="string">&#125;,</span></span><br><span class="line"><span class="string">&#123;\&quot;score\&quot;:0.17509049,\&quot;name\&quot;:\&quot;七姊妹\&quot;&#125;,</span></span><br><span class="line"><span class="string">&#123;\&quot;score\&quot;:0.049056254,\&quot;name\&quot;:\&quot;玫瑰\&quot;&#125;</span></span><br><span class="line"><span class="string">]</span></span><br><span class="line"><span class="string">,\&quot;log_id\&quot;:1740659036835919593&#125;&quot;</span></span><br></pre></td></tr></table></figure>
+
+
+</blockquote>
+<h3 id="获取本地图片文件"><a href="#获取本地图片文件" class="headerlink" title="获取本地图片文件"></a>获取本地图片文件</h3><p>获取本地图片后，需要按照百度要求将图片文件 以 base64 编码格式 传输出去 </p>
+<h4 id="调用API"><a href="#调用API" class="headerlink" title="调用API"></a>调用API</h4><p>使用post方法调用API获取识图结果并从json中解析出结果</p>
+<p><code>post</code> 一个以 <code>base64</code> 编码的图片文件给百度，再从百度返回的响应中获取相关信息</p>
+<h4 id="调用摄像头获取图像信息并存储、发送"><a href="#调用摄像头获取图像信息并存储、发送" class="headerlink" title="调用摄像头获取图像信息并存储、发送"></a>调用摄像头获取图像信息并存储、发送</h4><p>Client端：连接客户端（连接服务端对应ip地址及指定端口号），连接成功后点击按键即可获取服务端返回的图像</p>
+<p>Server端：访问摄像头，并实时获取摄像头采集到的图像</p>
+<h4 id="调用百度语音识别以及文心一言的API"><a href="#调用百度语音识别以及文心一言的API" class="headerlink" title="调用百度语音识别以及文心一言的API"></a>调用百度语音识别以及文心一言的API</h4><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">Widget::recv_data_from_baidu</span><span class="params">(QNetworkReply * my_reply)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">//接收网络回传信息，解析网络信息</span></span><br><span class="line">    QByteArray byte_array = my_reply-&gt;<span class="built_in">readAll</span>();</span><br><span class="line">    QJsonDocument doc = QJsonDocument::<span class="built_in">fromJson</span>(byte_array);</span><br><span class="line">    QJsonObject obj = doc.<span class="built_in">object</span>();</span><br><span class="line">    <span class="comment">//打印回传内容</span></span><br><span class="line">    <span class="built_in">qDebug</span>()&lt;&lt;obj.<span class="built_in">value</span>(<span class="string">&quot;result&quot;</span>).<span class="built_in">toString</span>();</span><br><span class="line">    ui-&gt;plainTextEdit-&gt;<span class="built_in">insertPlainText</span>(obj.<span class="built_in">value</span>(<span class="string">&quot;result&quot;</span>).<span class="built_in">toString</span>()+<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span>(obj.<span class="built_in">contains</span>(<span class="string">&quot;access_token&quot;</span>))&#123;</span><br><span class="line">        access_token = obj.<span class="built_in">value</span>(<span class="string">&quot;access_token&quot;</span>).<span class="built_in">toString</span>();</span><br><span class="line">        <span class="built_in">qDebug</span>()&lt;&lt; <span class="string">&quot;本次解析语音的token值为：&quot;</span>+access_token;</span><br><span class="line">    &#125;<span class="keyword">else</span> <span class="keyword">if</span>(obj.<span class="built_in">contains</span>(<span class="string">&quot;err_msg&quot;</span>))&#123;</span><br><span class="line">        QString str = obj.<span class="built_in">value</span>(<span class="string">&quot;err_msg&quot;</span>).<span class="built_in">toString</span>();</span><br><span class="line">        <span class="keyword">if</span>(str == <span class="string">&quot;success.&quot;</span>)&#123;</span><br><span class="line">            QJsonValue val = obj.<span class="built_in">value</span>(<span class="string">&quot;result&quot;</span>);</span><br><span class="line">            QJsonArray array = val.<span class="built_in">toArray</span>();</span><br><span class="line">            QString result = array.<span class="built_in">at</span>(<span class="number">0</span>).<span class="built_in">toString</span>();</span><br><span class="line">            <span class="built_in">qDebug</span>()&lt;&lt;<span class="string">&quot;我说的话：&quot;</span>&lt;&lt; result;</span><br><span class="line">            ui-&gt;plainTextEdit-&gt;<span class="built_in">insertPlainText</span>(<span class="string">&quot;问：&quot;</span> +result + <span class="string">&quot;\n&quot;</span>);</span><br><span class="line">            <span class="comment">//传递问题给百度机器人 </span></span><br><span class="line">QString url = <span class="built_in">QString</span>(<span class="string">&quot;https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro?access_token=[token值]&quot;</span>);</span><br><span class="line"><span class="comment">//实际上是需要每次使用时就请求一个token值，但是这里相当于偷懒了，直接用的token值【一个token值30天过期】</span></span><br><span class="line">            QJsonObject obj;</span><br><span class="line">            QJsonArray messagesArray;</span><br><span class="line">            QJsonObject userMessage;</span><br><span class="line">            userMessage.<span class="built_in">insert</span>(<span class="string">&quot;role&quot;</span>, <span class="string">&quot;user&quot;</span>);</span><br><span class="line">            userMessage.<span class="built_in">insert</span>(<span class="string">&quot;content&quot;</span>, result);</span><br><span class="line">            messagesArray.<span class="built_in">append</span>(userMessage);</span><br><span class="line">            obj.<span class="built_in">insert</span>(<span class="string">&quot;messages&quot;</span>, messagesArray);</span><br><span class="line">            QByteArray jsonByteArray = <span class="built_in">QJsonDocument</span>(obj).<span class="built_in">toJson</span>(QJsonDocument::Compact);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 创建请求对象并设置请求头</span></span><br><span class="line">            <span class="function">QNetworkRequest <span class="title">my_request</span><span class="params">(url)</span></span>;</span><br><span class="line">            my_request.<span class="built_in">setHeader</span>(QNetworkRequest::ContentTypeHeader, <span class="string">&quot;application/json&quot;</span>);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 发起网络请求，使用 POST 方法并发送 JSON 数据</span></span><br><span class="line">            my_accessmanager-&gt;<span class="built_in">post</span>(my_request, jsonByteArray);&#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>将客户端采集的内容发送到百度云端进行识别，人脸识别系统再返回识别结果给客户端。</p>
+<h2 id="业务"><a href="#业务" class="headerlink" title="业务"></a>业务</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>结合开发板完成一个智能家居系统</p>
+<blockquote>
+<p>摄像头采集；百度人脸识别；控制风扇、灯泡；天气显示；QT窗口页面设计</p>
+</blockquote>
+<h3 id="功能点1"><a href="#功能点1" class="headerlink" title="功能点1"></a>功能点1</h3><h4 id="要求"><a href="#要求" class="headerlink" title="要求"></a>要求</h4><ul>
+<li><p>摄像头实时显示图像，并且点击 “登录按钮” 就获取图像并上传到百度云端进行人脸识别</p>
+</li>
+<li><p>将 <strong>开发板摄像头中采集的图片</strong> 发送到百度云端进行人脸识别，再由人脸识别系统将 <strong>识别结果</strong> 返回，并对返回结果中的相似度进行比较，相似度超过所设置的阈值就登录成功【允许进入智能家居系统】。</p>
+</li>
+<li><p>调用开发板的摄像头并能够 <strong>实时采集摄像头的图像</strong></p>
+</li>
+</ul>
+<h4 id="页面"><a href="#页面" class="headerlink" title="页面"></a>页面</h4><ul>
+<li>实时显示摄像头的内容</li>
+<li>登录按钮【确认采集按钮】</li>
+</ul>
+<h4 id="数据传输"><a href="#数据传输" class="headerlink" title="数据传输"></a>数据传输</h4><ul>
+<li><p>存储<strong>所采集的摄像头图像数据</strong></p>
+</li>
+<li><p>存储<strong>来自于baidu的回应数据</strong></p>
+</li>
+</ul>
+<h4 id="要点"><a href="#要点" class="headerlink" title="要点"></a>要点</h4><h5 id="开发板连接主机"><a href="#开发板连接主机" class="headerlink" title="开发板连接主机"></a>开发板连接主机</h5><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo ssh 192.168.7.1</span><br></pre></td></tr></table></figure>
+
+<h5 id="人脸识别"><a href="#人脸识别" class="headerlink" title="人脸识别"></a>人脸识别</h5><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">QString image;<span class="comment">//base64编码后的图片</span></span><br><span class="line">QString group_id;<span class="comment">//需要查询的用户组id</span></span><br><span class="line">QString log_id;<span class="comment">//该次请求唯一表示码</span></span><br><span class="line">QString uid;<span class="comment">//用户id</span></span><br><span class="line">QString user_info;<span class="comment">//用户信息</span></span><br><span class="line">QString scores;<span class="comment">//相似度</span></span><br><span class="line">QString token;<span class="comment">//access_token值</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="操作摄像头"><a href="#操作摄像头" class="headerlink" title="操作摄像头"></a>操作摄像头</h4><h5 id="所需数据结构"><a href="#所需数据结构" class="headerlink" title="所需数据结构"></a>所需数据结构</h5><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">//注意：开发板的ip地址：192.168.7.1</span></span><br><span class="line"><span class="comment">//连接网线后，会生成同一个网段的ip地址:192.168.0.0/255.255.0.0</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">cam_buf</span> &#123;</span><br><span class="line">    <span class="type">void</span> *start;</span><br><span class="line">    <span class="type">size_t</span> length;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>	REQBUFS_COUNT	3 <span class="comment">//图片缓存个数为3</span></span></span><br><span class="line"><span class="type">static</span> <span class="keyword">struct</span> <span class="title class_">v4l2_requestbuffers</span> reqbufs_; <span class="comment">//缓存的数据结构</span></span><br><span class="line"><span class="type">static</span> <span class="keyword">struct</span> <span class="title class_">cam_buf</span> bufs[REQBUFS_COUNT];<span class="comment">//</span></span><br></pre></td></tr></table></figure>
+
+<h5 id="设置标签自适应"><a href="#设置标签自适应" class="headerlink" title="设置标签自适应"></a>设置标签自适应</h5><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;QApplication&gt;</span></span></span><br><span class="line"></span><br><span class="line">QGuiApplication::<span class="built_in">setAttribute</span>(Qt::AA_EnableHighDpiScaling);  <span class="comment">//设置自适应应用的分辨率</span></span><br><span class="line">ui-&gt;label_img-&gt;<span class="built_in">setScaledContents</span>(<span class="literal">true</span>);<span class="comment">//设置label自适应</span></span><br></pre></td></tr></table></figure>
+
+<h5 id="初始化函数"><a href="#初始化函数" class="headerlink" title="初始化函数"></a>初始化函数</h5><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">explicit</span> <span class="title">fsmpCamera</span><span class="params">(<span class="type">const</span> <span class="type">char</span>* cameraDev=<span class="string">&quot;/dev/video0&quot;</span>, <span class="type">unsigned</span> <span class="type">int</span> w = <span class="number">640</span>, <span class="type">unsigned</span> <span class="type">int</span> h=<span class="number">480</span>, QObject *parent = <span class="literal">nullptr</span>)</span> : QThread(parent), width(w), height(h), device(cameraDev) &#123;</span> ... &#125;</span><br><span class="line"><span class="comment">/*这是 fsmpCamera 类的构造函数，它包含了四个参数：摄像头设备路径（默认为 &quot;/dev/video0&quot;），图像宽度（默认为 640 像素），图像高度（默认为 480 像素），以及一个指向父对象的指针（默认为空指针）。这个构造函数使用了初始化列表 : QThread(parent), width(w), height(h), device(cameraDev) 来初始化类中的成员变量 width、height、device，并将父对象指针传递给了 QThread 构造函数。*/</span></span><br><span class="line"></span><br><span class="line">delayus = <span class="number">100000</span>;</span><br><span class="line"><span class="comment">/*这行代码初始化了 delayus 变量，用于设置拍摄图像的间隔时间，以微秒为单位（默认为 100000 微秒，即 0.1 秒）。*/</span></span><br><span class="line"></span><br><span class="line">fd = _init(device, &amp;width, &amp;height, &amp;size, &amp;ismjpeg);</span><br><span class="line"><span class="comment">/*这个语句调用了 _init 函数来初始化摄像头设备。它传递了摄像头设备路径 (device)，以及指向宽度、高度、图像大小和是否为 MJPEG 格式的指针。fd 是一个文件描述符，会被 _init 函数返回。这里使用了一个下划线前缀的函数名 _init，这种惯例有时表示这个函数是类内部的私有函数。*/</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (fd == <span class="number">-1</span>) <span class="keyword">return</span>;</span><br><span class="line"><span class="comment">/*这行代码检查 _init 函数的返回值 fd 是否为 -1。如果 _init 函数返回了 -1，代表初始化摄像头设备失败，函数会立即返回，不再继续执行后面的代码。*/</span></span><br><span class="line"></span><br><span class="line">ret = _start();</span><br><span class="line"><span class="comment">/*这个语句调用了 _start 函数，用于启动摄像头设备。ret 是一个返回值，它会接收 _start 函数的返回结果。*/</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (ret == <span class="number">-1</span>) <span class="keyword">return</span>;</span><br><span class="line"><span class="comment">/*这行代码检查 _start 函数的返回值 ret 是否为 -1。如果 _start 函数返回了 -1，代表启动摄像头设备失败，函数会立即返回，不再继续执行后面的代码。*/</span></span><br><span class="line"><span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; <span class="number">8</span>; i++) &#123; ... &#125;</span><br><span class="line"><span class="comment">/*for 循环，用于丢弃摄像头采集的前 8 张图片。在这个循环中，使用 dqbuf 函数来获取图片并使用 eqbuf 函数来释放图片，这样摄像头就可以开始采集最新的图片了。这里的 dqbuf 和 eqbuf 函数可能用于摄像头的缓冲区管理。</span></span><br><span class="line"><span class="comment">这些语句的作用是初始化 fsmpCamera 类对象的实例，并确保摄像头设备的初始化和启动过程成功完成。*/</span></span><br></pre></td></tr></table></figure>
+
+<h5 id="摄像头初始化步骤"><a href="#摄像头初始化步骤" class="headerlink" title="摄像头初始化步骤"></a>摄像头初始化步骤</h5><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="number">1</span>、打开设备文件</span><br><span class="line"></span><br><span class="line"><span class="number">2</span>、使用 <span class="built_in">open</span>() 打开设备文件，通过 O_RDWR 读写模式，若打开失败则返回 <span class="number">-1</span>。</span><br><span class="line">检查设备支持的驱动和视频采集能力</span><br><span class="line"></span><br><span class="line"><span class="number">3</span>、使用 <span class="built_in">ioctl</span>() 和 VIDIOC_QUERYCAP 查看设备的驱动能力，若不支持视频采集或视频流采集则返回错误。</span><br><span class="line">设置视频格式</span><br><span class="line"></span><br><span class="line"><span class="number">4</span>、使用 <span class="built_in">ioctl</span>() 和 VIDIOC_S_FMT 设置视频格式为 JPEG 格式，包括宽度、高度等参数。</span><br><span class="line">申请缓存</span><br><span class="line"></span><br><span class="line"><span class="number">5</span>、使用 <span class="built_in">ioctl</span>() 和 VIDIOC_REQBUFS 向驱动申请缓存，设置缓存个数和内存映射方式。</span><br><span class="line">映射缓存到用户空间</span><br><span class="line"></span><br><span class="line"><span class="number">6</span>、循环处理缓存，通过 <span class="built_in">ioctl</span>() 和 VIDIOC_QUERYBUF 获取缓存大小、偏移等信息，然后通过 <span class="built_in">mmap</span>() 将内核缓存地址映射到用户空间，并与文件描述符相关联。每次映射都会将缓存入队。</span><br><span class="line"></span><br><span class="line"><span class="number">7</span>、返回设置成功的宽度、高度和文件描述符</span><br><span class="line">返回设置成功的视频宽度、高度以及第一个缓存的大小，并将文件描述符返回给调用者。</span><br></pre></td></tr></table></figure>
+
+<h5 id="核心逻辑代码"><a href="#核心逻辑代码" class="headerlink" title="核心逻辑代码"></a>核心逻辑代码</h5><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;QtWidgets&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;fsmp.h&quot;</span> <span class="comment">// 假设头文件的名称为 fsmp.h</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CameraWidget</span> : <span class="keyword">public</span> QWidget &#123;</span><br><span class="line">    Q_OBJECT</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">CameraWidget</span>(QWidget *parent = <span class="literal">nullptr</span>) : <span class="built_in">QWidget</span>(parent) &#123;</span><br><span class="line">        QVBoxLayout *layout = <span class="keyword">new</span> <span class="built_in">QVBoxLayout</span>(<span class="keyword">this</span>);</span><br><span class="line">        </span><br><span class="line">        QLabel *label = <span class="keyword">new</span> <span class="built_in">QLabel</span>(<span class="keyword">this</span>);</span><br><span class="line">        QPushButton *captureButton = <span class="keyword">new</span> <span class="built_in">QPushButton</span>(<span class="string">&quot;Capture&quot;</span>, <span class="keyword">this</span>);</span><br><span class="line">        </span><br><span class="line">        layout-&gt;<span class="built_in">addWidget</span>(label);</span><br><span class="line">        layout-&gt;<span class="built_in">addWidget</span>(captureButton);</span><br><span class="line">        </span><br><span class="line">        <span class="built_in">connect</span>(captureButton, &amp;QPushButton::clicked, <span class="keyword">this</span>, &amp;CameraWidget::captureImage);</span><br><span class="line">        </span><br><span class="line">        fsmpCamera *camera = <span class="keyword">new</span> <span class="built_in">fsmpCamera</span>(<span class="string">&quot;/dev/video0&quot;</span>); <span class="comment">// 初始化摄像头</span></span><br><span class="line">        </span><br><span class="line">        <span class="built_in">connect</span>(camera, &amp;fsmpCamera::pixReady, <span class="keyword">this</span>, [=](QImage image) &#123;</span><br><span class="line">            QPixmap pixmap = QPixmap::<span class="built_in">fromImage</span>(image);</span><br><span class="line">            label-&gt;<span class="built_in">setPixmap</span>(pixmap);</span><br><span class="line">        &#125;);</span><br><span class="line">        </span><br><span class="line">        camera-&gt;<span class="built_in">start</span>(); <span class="comment">// 启动摄像头线程</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> slots:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">captureImage</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 进行图像采集并存储到数组的逻辑</span></span><br><span class="line">        fsmpCamera *camera = <span class="keyword">new</span> <span class="built_in">fsmpCamera</span>(<span class="string">&quot;/dev/video0&quot;</span>); <span class="comment">// 初始化摄像头</span></span><br><span class="line">        QImage capturedImage = camera-&gt;<span class="built_in">captureImage</span>(); <span class="comment">// 采集当前图像</span></span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 存储到数组或其他数据结构中</span></span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">delete</span> camera; <span class="comment">// 删除摄像头对象</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span> </span>&#123;</span><br><span class="line">    <span class="function">QApplication <span class="title">app</span><span class="params">(argc, argv)</span></span>;</span><br><span class="line">    CameraWidget widget;</span><br><span class="line">    widget.<span class="built_in">show</span>();</span><br><span class="line">    <span class="keyword">return</span> app.<span class="built_in">exec</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;main.moc&quot;</span></span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;widget.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;ui_widget.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;QDebug&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;QMessageBox&gt;</span></span></span><br><span class="line"></span><br><span class="line">Widget::<span class="built_in">Widget</span>(QWidget *parent) :</span><br><span class="line">    <span class="built_in">QWidget</span>(parent),</span><br><span class="line">    <span class="built_in">ui</span>(<span class="keyword">new</span> Ui::Widget)</span><br><span class="line">&#123;</span><br><span class="line">    ui-&gt;<span class="built_in">setupUi</span>(<span class="keyword">this</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//QString api_key = &quot;Tg2gljVDIG79Psj3C5cwhlXY&quot;;//语音识别AK</span></span><br><span class="line">    <span class="comment">//QString secret_key = &quot;7yt6WpbeGDxIrc093V35m8KeW06x8k30&quot;;//语音识别SK</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//QString chat_id = &quot;GQoqztFwG4F8Hp12dZ6rNqrr&quot;;//回答机器人AK</span></span><br><span class="line">    <span class="comment">//QString chat_key = &quot;UT6cBROxetCrxEqqY8HroFKbYBCBAwoD&quot;;//回答机器人SK</span></span><br><span class="line">    my_accessmanager = <span class="keyword">new</span> QNetworkAccessManager;</span><br><span class="line">    <span class="comment">//语音数据传输结束后，再从百度读取识别出并传输回来的数据</span></span><br><span class="line">    <span class="built_in">connect</span>(my_accessmanager,&amp;QNetworkAccessManager::finished,<span class="keyword">this</span>,&amp;Widget::recv_data_from_baidu);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//提取所有电脑内可用的语音输入设备的信息</span></span><br><span class="line">    <span class="comment">//获取语言识别的token</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">Widget::~<span class="built_in">Widget</span>()</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">delete</span> ui;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//按下按钮时：</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">Widget::on_pushButton_pressed</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    my_buffer = <span class="keyword">new</span> QBuffer;</span><br><span class="line">    my_buffer-&gt;<span class="built_in">open</span>(QIODevice::ReadWrite);</span><br><span class="line">    my_audio_input-&gt;<span class="built_in">start</span>(my_buffer);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//松开按钮时(发送格式化的语音数据给baidu)：</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">Widget::on_pushButton_released</span><span class="params">()</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//获取语音识别token</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">Widget::get_access_token</span><span class="params">(QString api_key, QString secret_key)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">Widget::recv_data_from_baidu</span><span class="params">(QNetworkReply * my_reply)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">//接收网络回传信息，解析网络信息</span></span><br><span class="line">    QByteArray byte_array = my_reply-&gt;<span class="built_in">readAll</span>();</span><br><span class="line">    QJsonDocument doc = QJsonDocument::<span class="built_in">fromJson</span>(byte_array);</span><br><span class="line">    QJsonObject obj = doc.<span class="built_in">object</span>();</span><br><span class="line">    <span class="comment">//打印回传内容</span></span><br><span class="line">    <span class="built_in">qDebug</span>()&lt;&lt;obj.<span class="built_in">value</span>(<span class="string">&quot;result&quot;</span>).<span class="built_in">toString</span>();</span><br><span class="line">    ui-&gt;plainTextEdit-&gt;<span class="built_in">insertPlainText</span>(obj.<span class="built_in">value</span>(<span class="string">&quot;result&quot;</span>).<span class="built_in">toString</span>()+<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span>(obj.<span class="built_in">contains</span>(<span class="string">&quot;access_token&quot;</span>))&#123;</span><br><span class="line">        access_token = obj.<span class="built_in">value</span>(<span class="string">&quot;access_token&quot;</span>).<span class="built_in">toString</span>();</span><br><span class="line">        <span class="built_in">qDebug</span>()&lt;&lt; <span class="string">&quot;本次解析语音的token值为：&quot;</span>+access_token;</span><br><span class="line">    &#125;<span class="keyword">else</span> <span class="keyword">if</span>(obj.<span class="built_in">contains</span>(<span class="string">&quot;err_msg&quot;</span>))&#123;</span><br><span class="line">        QString str = obj.<span class="built_in">value</span>(<span class="string">&quot;err_msg&quot;</span>).<span class="built_in">toString</span>();</span><br><span class="line">        <span class="keyword">if</span>(str == <span class="string">&quot;success.&quot;</span>)&#123;</span><br><span class="line">            QJsonValue val = obj.<span class="built_in">value</span>(<span class="string">&quot;result&quot;</span>);</span><br><span class="line">            QJsonArray array = val.<span class="built_in">toArray</span>();</span><br><span class="line">            QString result = array.<span class="built_in">at</span>(<span class="number">0</span>).<span class="built_in">toString</span>();</span><br><span class="line">            <span class="built_in">qDebug</span>()&lt;&lt;<span class="string">&quot;我的要求：&quot;</span>&lt;&lt; result;</span><br><span class="line">            ui-&gt;plainTextEdit-&gt;<span class="built_in">insertPlainText</span>(<span class="string">&quot;问：&quot;</span> +result + <span class="string">&quot;\n&quot;</span>);</span><br><span class="line">            <span class="comment">//传递问题给百度机器人</span></span><br><span class="line">            QString url = <span class="built_in">QString</span>(<span class="string">&quot;https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro?access_token=[access_token]&quot;</span>);</span><br><span class="line">                        QJsonObject obj;</span><br><span class="line">                        QJsonArray messagesArray;</span><br><span class="line">                        QJsonObject userMessage;</span><br><span class="line">                        userMessage.<span class="built_in">insert</span>(<span class="string">&quot;role&quot;</span>, <span class="string">&quot;user&quot;</span>);</span><br><span class="line">                        userMessage.<span class="built_in">insert</span>(<span class="string">&quot;content&quot;</span>, result);</span><br><span class="line">                        messagesArray.<span class="built_in">append</span>(userMessage);</span><br><span class="line">                        obj.<span class="built_in">insert</span>(<span class="string">&quot;messages&quot;</span>, messagesArray);</span><br><span class="line">                        QByteArray jsonByteArray = <span class="built_in">QJsonDocument</span>(obj).<span class="built_in">toJson</span>(QJsonDocument::Compact);</span><br><span class="line">                        <span class="comment">// 创建请求对象并设置请求头</span></span><br><span class="line">                        <span class="function">QNetworkRequest <span class="title">my_request</span><span class="params">(url)</span></span>;</span><br><span class="line">                        my_request.<span class="built_in">setHeader</span>(QNetworkRequest::ContentTypeHeader, <span class="string">&quot;application/json&quot;</span>);</span><br><span class="line">                        <span class="comment">// 发起网络请求，使用 POST 方法并发送 JSON 数据</span></span><br><span class="line">                        my_accessmanager-&gt;<span class="built_in">post</span>(my_request, jsonByteArray);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>开发学习</category>
+      </categories>
+      <tags>
+        <tag>Qt</tag>
+        <tag>C++</tag>
+        <tag>实训</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>docker使用及部署</title>
+    <url>/leiblog/2026/06/16/docker%E4%BD%BF%E7%94%A8%E5%8F%8A%E9%83%A8%E7%BD%B2/</url>
+    <content><![CDATA[<h1 id="docker-和-docker-compose-部署应用"><a href="#docker-和-docker-compose-部署应用" class="headerlink" title="docker 和 docker compose 部署应用"></a>docker 和 docker compose 部署应用</h1><h2 id="docker-和-docker-compose-是什么"><a href="#docker-和-docker-compose-是什么" class="headerlink" title="docker 和 docker compose 是什么"></a>docker 和 docker compose 是什么</h2><p><strong>Docker</strong>，可以理解为是一种轻型的虚拟机，只需虚拟你所需要使用的软件的运行环境，即可保证软件能够正常运行，且这种虚拟是建立在一个个容器中的，是<strong>与宿主机器的环境隔离开</strong>的，并不会影响宿主机器已经配置好的环境，且能够十分方便地将项目在各种环境下进行<strong>迁移、部署</strong>。</p>
+<p>这里与虚拟机进行一个对比，会有更加直观的理解：</p>
+<table>
+<thead>
+<tr>
+<th>特点</th>
+<th>普通虚拟机</th>
+<th>Docker</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>跨平台</td>
+<td>不一定支持在不带有桌面系统的服务器上运行</td>
+<td>各类 windows 和 Linux 都支持</td>
+</tr>
+<tr>
+<td>性能</td>
+<td>内存占用高，各项不需要的服务也有包含，不纯粹</td>
+<td>只虚拟软件所需的运行环境，减少软件不需要的服务</td>
+</tr>
+<tr>
+<td>安装难度</td>
+<td>需要手动部署环境</td>
+<td>一个命令就可自动部署好软件所需环境</td>
+</tr>
+<tr>
+<td>稳定性</td>
+<td>不同系统之间存在差异</td>
+<td>稳定性好</td>
+</tr>
+</tbody></table>
+<p>然而，在使用docker部署项目的时候，我们经常会发现一个项目往往不是独立运行的，需要多个软件协同工作，这就需要我们运行多个容器，并且让这些容器之间能够互相通信，当然，我们可以使用docker在这些容器之间构建起虚拟网络，但这无疑增加了部署的难度，因此，我们需要使用 <strong>docker-compose</strong> ，把项目的多个服务集合到一起，并一键运行。</p>
+<h2 id="docker-原理"><a href="#docker-原理" class="headerlink" title="docker 原理"></a>docker 原理</h2><p>首先，我们需要知道作为容器，需要哪些服务？</p>
+<p>简单来说，容器可以理解为一个专用某服务的独立操作系统，即：精简linux操作系统+某个软件服务 的组合。</p>
+<p>因此，它必须包含运行某个软件所需的所有内容，包括：代码、运行所需要调用的库文件、环境变量、配置文件等。</p>
+<h2 id="docker-使用"><a href="#docker-使用" class="headerlink" title="docker 使用"></a>docker 使用</h2><blockquote>
+<ul>
+<li><strong>镜像【image】</strong>：可以理解为官方、开发者发布的能够提供不同服务的软件安装包。一般的镜像都可以去 <a href="https://hub.docker.com/">docker hub</a> 找到。</li>
+<li><strong>容器【container】</strong>：软件安装并运行之后的状态，每个软件运行环境都是独立且隔离的，可能存在由一个镜像运行的多个容器的情况。</li>
+</ul>
+</blockquote>
+<h2 id="docker安装及镜像更换"><a href="#docker安装及镜像更换" class="headerlink" title="docker安装及镜像更换"></a>docker安装及镜像更换</h2><p>安装docker只需要参照官网的文档：</p>
+<ul>
+<li>桌面版：<a href="https://docs.docker.com/desktop/install/linux-install/">Install Docker Desktop on Linux | Docker Docs</a></li>
+<li>服务器版：<a href="https://docs.docker.com/engine/install/">Install Docker Engine | Docker Docs</a></li>
+</ul>
+<p>至于镜像更换，建议直接<strong>登录</strong>阿里云使用其提供的镜像进行更换：<a href="https://cr.console.aliyun.com/cn-hangzhou/instances/mirrors">容器镜像服务 (aliyun.com)</a></p>
+<p>也可以直接按照这个老哥提供的脚本一键安装：<a href="https://blog.csdn.net/wavemap/article/details/139373367">docker和docker compose、docker更换国内源</a></p>
+<h2 id="docker相关命令"><a href="#docker相关命令" class="headerlink" title="docker相关命令"></a>docker相关命令</h2><h3 id="辅助命令"><a href="#辅助命令" class="headerlink" title="辅助命令"></a>辅助命令</h3><ul>
+<li><code>docker version</code> 查看docker客户端引擎、服务端引擎版本信息</li>
+<li><code>docker info</code> 查看docker引擎详细信息</li>
+<li><code>docker --help</code> 查看命令帮助信息</li>
+</ul>
+<h3 id="镜像相关操作命令"><a href="#镜像相关操作命令" class="headerlink" title="镜像相关操作命令"></a>镜像相关操作命令</h3><h4 id="查看本地仓库中的镜像"><a href="#查看本地仓库中的镜像" class="headerlink" title="查看本地仓库中的镜像"></a>查看本地仓库中的镜像</h4><ul>
+<li><code>docker images</code>：查看本地仓库中的所有镜像</li>
+<li><code>docker images 镜像名称</code>：查看本地仓库中所有与指定”镜像名称”相关的镜像</li>
+</ul>
+<p>执行之后返回结果如图： <img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240726153413139.png" alt="image-20240726153413139"></p>
+<p>显示信息的构成：</p>
+<ul>
+<li>REPOSITORY：镜像名称</li>
+<li>TAG：镜像版本</li>
+<li>IMAGE ID：镜像ID【唯一标识】，在实际运用中，一般来说，前三位就能确定一个镜像</li>
+<li>CREATED：该镜像官方创建的时间</li>
+<li>SIZE：镜像大小</li>
+</ul>
+<h4 id="下载远端仓库中的镜像"><a href="#下载远端仓库中的镜像" class="headerlink" title="下载远端仓库中的镜像"></a>下载远端仓库中的镜像</h4><ul>
+<li><code>docker pull 某个镜像的名称</code>：这样使用默认拉取的是最新版本，&lt;&#x3D;&#x3D;&gt; <code>docker pull 镜像名称:latest</code></li>
+<li><code>docker pull 镜像名称:版本号</code>：这样可以获取指定版本的镜像</li>
+</ul>
+<h4 id="搜索镜像"><a href="#搜索镜像" class="headerlink" title="搜索镜像"></a>搜索镜像</h4><p><code>docker search 镜像名称</code>：在docker hub中镜像搜索，并返回符合用户搜索的结果，并不会显示版本，需要到docker hub网页中去查看具体的版本号</p>
+<h4 id="删除镜像"><a href="#删除镜像" class="headerlink" title="删除镜像"></a>删除镜像</h4><ul>
+<li><code>docker image rm 镜像id</code>：&lt;&#x3D;&#x3D;&gt;<code>docker rmi 镜像id</code>，这种方式只能删除没用运行过的镜像，不然就只能强制删除</li>
+<li><code>docker image rm -f 镜像id</code>：这种方式是强制删除，会将镜像和基于该镜像运行的容器全都删除</li>
+<li><code>docker image rm $(docker images 镜像名称 -q)</code>：组合式删除所有指定镜像名称的镜像，参数 <code>-q</code> 代表仅显示id</li>
+</ul>
+<h3 id="容器相关操作命令"><a href="#容器相关操作命令" class="headerlink" title="容器相关操作命令"></a>容器相关操作命令</h3><p><strong>基本格式：<code>docker 命令 [选项]</code></strong></p>
+<h4 id="查看正在运行的容器"><a href="#查看正在运行的容器" class="headerlink" title="查看正在运行的容器"></a>查看正在运行的容器</h4><ul>
+<li><code>docker ps</code>：查看正在运行的容器</li>
+<li><code>docker ps -a</code>：查看所有的容器，包括没有运行的容器</li>
+</ul>
+<p>执行之后返回结果如图： </p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240726161331485.png" alt="image-20240726161331485"></p>
+<p>其中：</p>
+<ul>
+<li>CONTAINER ID：代表容器ID【唯一标识】</li>
+<li>IMAGE：基于哪个镜像</li>
+<li>COMMAND：容器内启动服务的命令</li>
+<li>CREATED：容器的创建时间</li>
+<li>STATUS：容器当前状态</li>
+<li>PORTS：容器内该服务监听的端口号</li>
+<li>NAMES：容器名称，若在启动时未指定名称，docker自动分配容器的名称</li>
+</ul>
+<h4 id="运行容器命令"><a href="#运行容器命令" class="headerlink" title="运行容器命令"></a>运行容器命令</h4><ul>
+<li><code>docker run 镜像id</code>：将镜像id对应的镜像运行起来，<em><strong>注意每运行一次镜像就会生成一个容器</strong></em></li>
+<li><code>docker run -p 宿主机端口号:容器内服务端口号 镜像id</code>：运行容器，并同时设置容器与宿主机端口的映射关系，这样才能外部访问得到该容器的对应端口，注意：使用这种方式时，支持映射多个端口，增加 <code>-p 宿主机端口号:容器内服务端口号</code> 即可</li>
+<li><code>docker run -d 镜像id</code>：代表后台运行该容器</li>
+<li><code>docker run --name 容器名称 镜像id </code>：指定启动容器的名称</li>
+</ul>
+<h4 id="停止、重启、暂停、恢复容器"><a href="#停止、重启、暂停、恢复容器" class="headerlink" title="停止、重启、暂停、恢复容器"></a>停止、重启、暂停、恢复容器</h4><ul>
+<li><code>docker stop 容器id</code>：停止，在容器启动之后可以使用</li>
+<li><code>docker restart 容器id </code>：重启，在容器启动之后可以使用</li>
+<li><code>docker start 容器id </code>：启动，在容器被停止之后可以使用</li>
+<li><code>docker pause 容器id</code>：暂停，在容器启动之后可以使用</li>
+<li><code>docker unpause 容器id</code>：重新开启，在容器暂停之后可以使用</li>
+</ul>
+<h4 id="杀死容器"><a href="#杀死容器" class="headerlink" title="杀死容器"></a>杀死容器</h4><p><code>docker kill 容器id</code>：将容器进程直接杀死</p>
+<h4 id="删除容器"><a href="#删除容器" class="headerlink" title="删除容器"></a>删除容器</h4><ul>
+<li><code>docker rm 容器id</code>：只能删除处于停止状态的容器，运行状态中的容器用这种方式不能删除</li>
+<li><code>docker rm -f 容器id</code>：强制删除，即使该容器处于运行状态</li>
+<li><code>docker rm $(docker ps -qa)</code>：组合式方式，删除所有容器</li>
+</ul>
+<h4 id="查看容器日志"><a href="#查看容器日志" class="headerlink" title="查看容器日志"></a>查看容器日志</h4><ul>
+<li><code>docker logs 容器id</code>：查看某个容器的日志</li>
+<li><code>docker logs -f 容器id</code>：查看某个容器的实时日志</li>
+<li><code>docker logs -t 容器id</code>：查看容器标注宿主机时间的日志</li>
+</ul>
+<h4 id="进入容器内部"><a href="#进入容器内部" class="headerlink" title="进入容器内部"></a>进入容器内部</h4><ul>
+<li><p><code>docker exec -it 容器id bash</code>：进入指定容器中并使用交互模式在容器中的bash窗口进行操作</p>
+<p>之后再退出容器：</p>
+<ul>
+<li><code>exit</code>：退出后，该容器也许就被停止了【不一定，但可能就会停止】</li>
+<li>ctrl+p+q：退出后，该容器依然在运行中</li>
+</ul>
+</li>
+</ul>
+<h4 id="容器与宿主机之间的文件拷贝"><a href="#容器与宿主机之间的文件拷贝" class="headerlink" title="容器与宿主机之间的文件拷贝"></a>容器与宿主机之间的文件拷贝</h4><ul>
+<li><code>docker cp 容器id:容器内资源路径 宿主机目录路径</code>：将容器中的指定文件和目录拷贝到宿主机中</li>
+<li><code>docker cp 主机内资源路径 容器id:容器路径 </code>：将宿主机中指定文件复制到容器内部</li>
+</ul>
+<h4 id="查看容器内信息"><a href="#查看容器内信息" class="headerlink" title="查看容器内信息"></a>查看容器内信息</h4><ul>
+<li><code>docker top 容器id</code>：查看容器内运行的进程</li>
+<li><code>docker inspect 容器id</code>：<strong>展示容器内的其他信息</strong></li>
+</ul>
+<h4 id="容器数据卷"><a href="#容器数据卷" class="headerlink" title="容器数据卷"></a>容器数据卷</h4><p>生产条件下，这是最重要的，因为只有进行了容器数据卷的映射，才能实现<strong>数据的持久化管理</strong>。</p>
+<h5 id="数据卷是什么？"><a href="#数据卷是什么？" class="headerlink" title="数据卷是什么？"></a>数据卷是什么？</h5><p>数据卷即：Data Volume</p>
+<p>作用：用来实现容器中数据和宿主机中数据进行映射的【从而实现挂载并实时同步某些文件 or 文件夹的作用】</p>
+<p><strong>【注意：数据卷的绑定使用必须在容器首次启动的时候设置】</strong></p>
+<h5 id="数据卷的使用"><a href="#数据卷的使用" class="headerlink" title="数据卷的使用"></a>数据卷的使用</h5><ul>
+<li><code>docker run -v 宿主机某目录:容器内某目录 容器id</code></li>
+</ul>
+<!-- 在容器内的路径后加上 :ro 则表示在容器内仅可读 -->
+
+<blockquote>
+<p><strong>慎用</strong>&#x3D;&#x3D;》使用绝对路径时，如果按照如下操作进行：<code>docker run -v 宿主机绝对路径:容器内路径</code></p>
+<p>则：这种方式会将容器内路径的原本存在的内容全部清空，并始终按照宿主机的路径作为自己的路径</p>
+</blockquote>
+<ul>
+<li><code>docker run -v aa:/usr/local/tomcat/webapps 容器id</code>：使用别名的方式设置数据卷</li>
+</ul>
+<blockquote>
+<p>aa是什么？【可以通过 <code>find / -name aa</code> 对宿主机中从根目录开始查找名为aa的文件夹 】</p>
+<p>1、aa代表的是某个容器对应的数据卷的别名</p>
+<p>2、这个别名如果存在，则容器在启动的时候就直接启动；如果不存在则自动创建</p>
+<p>3、使用别名方式可以保留容器中所映射路径的原始内容</p>
+<p>【但是前提条件是在宿主机中创建起来的别名所对应的路径下不能存在有内容】</p>
+</blockquote>
+<h4 id="打包容器为一个镜像"><a href="#打包容器为一个镜像" class="headerlink" title="打包容器为一个镜像"></a>打包容器为一个镜像</h4><h5 id="意义"><a href="#意义" class="headerlink" title="意义"></a>意义</h5><ul>
+<li>镜像：仅可读</li>
+<li>容器：可读可写</li>
+</ul>
+<p>意义：将修改配置好的容器打包成一个新的镜像，以后在生产环境下，就可以基于这个镜像在<strong>不同的宿主机下</strong>运行成容器</p>
+<h5 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h5><ul>
+<li><code>docker commit -m &quot;描述信息&quot; -a &quot;作者信息&quot; 容器id 打包的镜像名称:标签</code>：将容器打包为新的镜像，其中标签一般为版本号</li>
+</ul>
+<h5 id="备份为tar及恢复"><a href="#备份为tar及恢复" class="headerlink" title="备份为tar及恢复"></a>备份为tar及恢复</h5><ul>
+<li><code>docker save 镜像名:标签 -o 目录/名称.tar</code>：将某个镜像打包为tar以便于传输，标签一般为版本</li>
+<li><code>docker load -i 名称.tar</code>：将打包好的tar文件中的镜像载入</li>
+</ul>
+]]></content>
+      <categories>
+        <category>开发工具</category>
+      </categories>
+      <tags>
+        <tag>Docker</tag>
+        <tag>docker-compose</tag>
+        <tag>部署</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>npm简单介绍</title>
+    <url>/leiblog/2026/06/16/npm%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/</url>
+    <content><![CDATA[<h1 id="NPM-使用介绍"><a href="#NPM-使用介绍" class="headerlink" title="NPM 使用介绍"></a>NPM 使用介绍</h1><p>NPM是随同NodeJS一起安装的包管理工具，能解决NodeJS代码部署上的很多问题，常见的使用场景有以下几种：</p>
+<ul>
+<li>允许用户从NPM服务器下载别人编写的第三方包到本地使用。</li>
+<li>允许用户从NPM服务器下载并安装别人编写的命令行程序到本地使用。</li>
+<li>允许用户将自己编写的包或命令行程序上传到NPM服务器供别人使用。</li>
+</ul>
+<p>由于新版的nodejs已经集成了npm，所以之前npm也一并安装好了。同样可以通过输入 <strong>“npm -v”</strong> 来测试是否成功安装。命令如下，出现版本提示表示安装成功:</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line">$ npm -v</span><br><span class="line"><span class="number">2.3</span><span class="number">.0</span></span><br></pre></td></tr></table></figure>
+
+<p>也可以通过命令对npm进行升级：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line">npm install npm -g</span><br></pre></td></tr></table></figure>
+
+<h1 id="使用-npm-命令安装模块"><a href="#使用-npm-命令安装模块" class="headerlink" title="使用 npm 命令安装模块"></a>使用 npm 命令安装模块</h1><p>npm 安装 Node.js 模块语法格式如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ npm install &lt;Module Name&gt;</span><br></pre></td></tr></table></figure>
+
+<p>以下实例，我们使用 npm 命令安装常用的 Node.js web框架模块 <strong>express</strong>:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ npm install express</span><br></pre></td></tr></table></figure>
+
+<p>安装好之后，express 包就放在了工程目录下的 node_modules 目录中，因此在代码中只需要通过 <strong>require(‘express’)</strong> 的方式就好，无需指定第三方包路径。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">var express = require(&#x27;express&#x27;);</span><br></pre></td></tr></table></figure>
+
+<h3 id="本地安装"><a href="#本地安装" class="headerlink" title="本地安装"></a>本地安装</h3><ul>
+<li>\1. 将安装包放在 .&#x2F;node_modules 下（运行 npm 命令时所在的目录），如果没有 node_modules 目录，会在当前执行 npm 命令的目录下生成 node_modules 目录。</li>
+<li>\2. 可以通过 require() 来引入本地安装的包。</li>
+</ul>
+<h3 id="全局安装"><a href="#全局安装" class="headerlink" title="全局安装"></a>全局安装</h3><ul>
+<li>\1. 将安装包放在 &#x2F;usr&#x2F;local 下或者你 node 的安装目录。</li>
+<li>\2. 可以直接在命令行里使用。</li>
+</ul>
+<p>如果你希望具备两者功能，则需要在两个地方安装它或使用 <strong>npm link</strong>。</p>
+<p>接下来我们使用全局方式安装 express</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ npm install express -g</span><br></pre></td></tr></table></figure>
+
+<h1 id="查看安装信息"><a href="#查看安装信息" class="headerlink" title="查看安装信息"></a>查看安装信息</h1><p>你可以使用以下命令来查看所有全局安装的模块：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ npm list -g</span><br><span class="line"></span><br><span class="line">├─┬ cnpm@4.3.2</span><br><span class="line">│ ├── auto-correct@1.0.0</span><br><span class="line">│ ├── bagpipe@0.3.5</span><br><span class="line">│ ├── colors@1.1.2</span><br><span class="line">│ ├─┬ commander@2.9.0</span><br><span class="line">│ │ └── graceful-readlink@1.0.1</span><br><span class="line">│ ├─┬ cross-spawn@0.2.9</span><br><span class="line">│ │ └── lru-cache@2.7.3</span><br><span class="line">……</span><br></pre></td></tr></table></figure>
+
+<p>如果要查看某个模块的版本号，可以使用命令如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ npm list grunt</span><br><span class="line"></span><br><span class="line">projectName@projectVersion /path/to/project/folder</span><br><span class="line">└── grunt@0.4.1</span><br></pre></td></tr></table></figure>
+
+<h1 id="package-json"><a href="#package-json" class="headerlink" title="package.json"></a>package.json</h1><p>package.json 位于模块的目录下，用于定义包的属性。</p>
+<h3 id="Package-json-属性说明"><a href="#Package-json-属性说明" class="headerlink" title="Package.json 属性说明"></a>Package.json 属性说明</h3><ul>
+<li><strong>name</strong> - 包名。</li>
+<li><strong>version</strong> - 包的版本号。</li>
+<li><strong>description</strong> - 包的描述。</li>
+<li><strong>homepage</strong> - 包的官网 url 。</li>
+<li><strong>author</strong> - 包的作者姓名。</li>
+<li><strong>contributors</strong> - 包的其他贡献者姓名。</li>
+<li><strong>dependencies</strong> - 依赖包列表。如果依赖包没有安装，npm 会自动将依赖包安装在 node_module 目录下。</li>
+<li><strong>repository</strong> - 包代码存放的地方的类型，可以是 git 或 svn，git 可在 Github 上。</li>
+<li><strong>main</strong> - main 字段指定了程序的主入口文件，require(‘moduleName’) 就会加载这个文件。这个字段的默认值是模块根目录下面的 index.js。</li>
+<li><strong>keywords</strong> - 关键字</li>
+</ul>
+<h1 id="卸载模块"><a href="#卸载模块" class="headerlink" title="卸载模块"></a>卸载模块</h1><p>我们可以使用以下命令来卸载 Node.js 模块。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ npm uninstall express</span><br></pre></td></tr></table></figure>
+
+
+
+<p>卸载后，你可以到 &#x2F;node_modules&#x2F; 目录下查看包是否还存在，或者使用以下命令查看：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ npm ls</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h1 id="更新模块"><a href="#更新模块" class="headerlink" title="更新模块"></a>更新模块</h1><p>我们可以使用以下命令更新模块：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ npm update express</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h1 id="搜索模块"><a href="#搜索模块" class="headerlink" title="搜索模块"></a>搜索模块</h1><p>使用以下来搜索模块：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ npm search express</span><br></pre></td></tr></table></figure>
+
+<h1 id="NPM-常用命令"><a href="#NPM-常用命令" class="headerlink" title="NPM 常用命令"></a>NPM 常用命令</h1><p>除了本章介绍的部分外，NPM还提供了很多功能，package.json里也有很多其它有用的字段。</p>
+<p>除了可以在<a href="https://npmjs.org/doc/">npmjs.org&#x2F;doc&#x2F;</a>查看官方文档外，这里再介绍一些NPM常用命令。</p>
+<p>NPM提供了很多命令，例如install和publish，使用npm help可查看所有命令。</p>
+<ul>
+<li>NPM提供了很多命令，例如<code>install</code>和<code>publish</code>，使用<code>npm help</code>可查看所有命令。</li>
+<li>使用<code>npm help &lt;command&gt;</code>可查看某条命令的详细帮助，例如<code>npm help install</code>。</li>
+<li>在<code>package.json</code>所在目录下使用<code>npm install . -g</code>可先在本地安装当前命令行程序，可用于发布前的本地测试。</li>
+<li>使用<code>npm update &lt;package&gt;</code>可以把当前目录下<code>node_modules</code>子目录里边的对应模块更新至最新版本。</li>
+<li>使用<code>npm update &lt;package&gt; -g</code>可以把全局安装的对应命令行程序更新至最新版。</li>
+<li>使用<code>npm cache clear</code>可以清空NPM本地缓存，用于对付使用相同版本号发布新版本代码的人。</li>
+<li>使用<code>npm unpublish &lt;package&gt;@&lt;version&gt;</code>可以撤销发布自己发布过的某个版本代码。</li>
+</ul>
+<h1 id="使用淘宝-NPM-镜像"><a href="#使用淘宝-NPM-镜像" class="headerlink" title="使用淘宝 NPM 镜像"></a>使用淘宝 NPM 镜像</h1><p>大家都知道国内直接使用 npm 的官方镜像是非常慢的，这里推荐使用淘宝 NPM 镜像。</p>
+<p>淘宝 NPM 镜像是一个完整 npmjs.org 镜像，你可以用此代替官方版本(只读)，同步频率目前为 10分钟 一次以保证尽量与官方服务同步。</p>
+<p>你可以使用淘宝定制的 cnpm (gzip 压缩支持) 命令行工具代替默认的 npm:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ npm install -g cnpm --registry=https://registry.npmmirror.com</span><br></pre></td></tr></table></figure>
+
+<p>这样就可以使用 cnpm 命令来安装模块了：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ cnpm install [name]</span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>前端学习</category>
+      </categories>
+      <tags>
+        <tag>npm</tag>
+        <tag>Node.js</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>什么是频域</title>
+    <url>/leiblog/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/</url>
+    <content><![CDATA[<blockquote>
+<p>注：转载文章</p>
+</blockquote>
+<p>傅里叶分析不仅仅是一个数学工具，更是一种可以彻底颠覆一个人以前世界观的思维模式。但不幸的是，傅里叶分析的公式看起来太复杂了，所以很多大一新生上来就懵圈并从此对它深恶痛绝。老实说，这么有意思的东西居然成了大学里的杀手课程，不得不归咎于编教材的人实在是太严肃了。（您把教材写得好玩一点会死吗？会死吗？）所以我一直想写一个有意思的文章来解释傅里叶分析，有可能的话高中生都能看懂的那种。所以，不管读到这里的您从事何种工作，我保证您都能看懂，并且一定将体会到通过傅里叶分析看到世界另一个样子时的快感。至于对于已经有一定基础的朋友，也希望不要看到会的地方就急忙往后翻，仔细读一定会有新的发现。</p>
+<p>————以上是定场诗————</p>
+<p>下面进入正题：</p>
+<p>抱歉，还是要啰嗦一句：其实学习本来就不是易事，我写这篇文章的初衷也是希望大家学习起来更加轻松，充满乐趣。但是千万！千万不要把这篇文章收藏起来，或是存下地址，心里想着：以后有时间再看。这样的例子太多了，也许几年后你都没有再打开这个页面。无论如何，耐下心，读下去。这篇文章要比读课本要轻松、开心得多……</p>
+<p>p.s.本文无论是cos还是sin，都统一用“正弦波”（Sine Wave）一词来代表简谐波。</p>
+<h2 id="一、什么是频域"><a href="#一、什么是频域" class="headerlink" title="一、什么是频域"></a>一、什么是频域</h2><p>从我们出生，我们看到的世界都以时间贯穿，股票的走势、人的身高、汽车的轨迹都会随着时间发生改变。这种以时间作为参照来观察动态世界的方法我们称其为时域分析。而我们也想当然的认为，世间万物都在随着时间不停的改变，并且永远不会静止下来。但如果我告诉你，用另一种方法来观察世界的话，你会发现世界是永恒不变的，你会不会觉得我疯了？我没有疯，这个静止的世界就叫做频域。</p>
+<p>先举一个<strong>公式上并非很恰当</strong>，但意义上再贴切不过的例子：</p>
+<p>在你的理解中，一段音乐是什么呢？</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\v2-6022532569f2de50686600b75096e51a_1440w.jpg" alt="img"></p>
+<p>这是我对音乐最普遍的理解，一个随着时间变化的震动。但我相信对于乐器小能手们来说，音乐更直观的理解是这样的：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\v2-ce6c079383352134250cedd69e60b2e1_1440w.jpg" alt="img"></p>
+<p>好的！下课，同学们再见。</p>
+<p>是的，其实这一段写到这里已经可以结束了。上图是音乐在时域的样子，而下图则是音乐在频域的样子。所以频域这一概念对大家都从不陌生，只是从来没意识到而已。</p>
+<p>现在我们可以回过头来重新看看一开始那句痴人说梦般的话：世界是永恒的。</p>
+<p>将以上两图简化：</p>
+<p>时域：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\v2-236f9f8eacb9995745b174928091e90e_1440w.jpg" alt="img"></p>
+<p>频域：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\v2-84e9adb814ea7db8c10554164372a4a8_1440w.jpg" alt="img"></p>
+<p>在时域，我们观察到钢琴的琴弦一会上一会下的摆动，就如同一支股票的走势；而在频域，只有那一个永恒的音符。</p>
+<p>所以</p>
+<h2 id="你眼中看似落叶纷飞变化无常的世界，实际只是躺在上帝怀中一份早已谱好的乐章。"><a href="#你眼中看似落叶纷飞变化无常的世界，实际只是躺在上帝怀中一份早已谱好的乐章。" class="headerlink" title="你眼中看似落叶纷飞变化无常的世界，实际只是躺在上帝怀中一份早已谱好的乐章。"></a>你眼中看似落叶纷飞变化无常的世界，实际只是躺在上帝怀中一份早已谱好的乐章。</h2><p>抱歉，这不是一句鸡汤文，而是黑板上确凿的公式：傅里叶同学告诉我们，任何周期函数，都可以看作是不同振幅，不同相位正弦波的叠加。在第一个例子里我们可以理解为，利用对不同琴键不同力度，不同时间点的敲击，可以组合出任何一首乐曲。</p>
+<p>而贯穿时域与频域的方法之一，就是传中说的傅里叶分析。傅里叶分析可分为傅里叶级数（Fourier Serie）和傅里叶变换(Fourier Transformation)，我们从简单的开始谈起。</p>
+<h2 id="二、傅里叶级数-Fourier-Series-的频谱"><a href="#二、傅里叶级数-Fourier-Series-的频谱" class="headerlink" title="二、傅里叶级数(Fourier Series)的频谱"></a>二、傅里叶级数(Fourier Series)的频谱</h2><p>还是举个栗子并且有图有真相才好理解。</p>
+<p>如果我说我能用前面说的正弦曲线波叠加出一个带90度角的矩形波来，你会相信吗？你不会，就像当年的我一样。但是看看下图：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\055bf33bb84555a952804c5dbeb75dd9_1440w.jpg" alt="img"></p>
+<p>第一幅图是一个郁闷的正弦波cos（x）</p>
+<p>第二幅图是2个卖萌的正弦波的叠加cos(x)+a.cos(3x)</p>
+<p>第三幅图是4个发春的正弦波的叠加</p>
+<p>第四幅图是10个便秘的正弦波的叠加</p>
+<p>随着正弦波数量逐渐的增长，他们最终会叠加成一个标准的矩形，大家从中体会到了什么道理？</p>
+<p>（只要努力，弯的都能掰直！）</p>
+<p>随着叠加的递增，所有正弦波中上升的部分逐渐让原本缓慢增加的曲线不断变陡，而所有正弦波中下降的部分又抵消了上升到最高处时继续上升的部分使其变为水平线。一个矩形就这么叠加而成了。但是要多少个正弦波叠加起来才能形成一个标准90度角的矩形波呢？不幸的告诉大家，答案是无穷多个。（上帝：我能让你们猜着我？）</p>
+<p>不仅仅是矩形，你能想到的任何波形都是可以如此方法用正弦波叠加起来的。这是没<br>有接触过傅里叶分析的人在直觉上的第一个难点，但是一旦接受了这样的设定，游戏就开始有意思起来了。</p>
+<p>还是上图的正弦波累加成矩形波，我们换一个角度来看看：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\563deb4a6599d052b3ba108661872c57_1440w.jpg" alt="img"></p>
+<p>在这几幅图中，最前面黑色的线就是所有正弦波叠加而成的总和，也就是越来越接近矩形波的那个图形。而后面依不同颜色排列而成的正弦波就是组合为矩形波的各个分量。这些正弦波按照频率从低到高从前向后排列开来，而每一个波的振幅都是不同的。一定有细心的读者发现了，每两个正弦波之间都还有一条直线，那并不是分割线，而是振幅为0的正弦波！也就是说，为了组成特殊的曲线，有些正弦波成分是不需要的。</p>
+<p><strong>这里，不同频率的正弦波我们成为频率分量。</strong></p>
+<p>好了，关键的地方来了！！</p>
+<p>如果我们把第一个频率最低的频率分量看作“1”，我们就有了构建频域的最基本单元。</p>
+<p>对于我们最常见的有理数轴，数字“1”就是有理数轴的基本单元。</p>
+<p>时域的基本单元就是“1秒”，如果我们将一个角频率为W0的正弦波cos（<img src="https://www.zhihu.com/equation?tex=%5Comega_%7B0%7D+" alt="[公式]">t）看作基础，那么频域的基本单元就是<img src="https://www.zhihu.com/equation?tex=%5Comega_%7B0%7D+" alt="[公式]">。</p>
+<p>有了“1”，还要有“0”才能构成世界，那么频域的“0”是什么呢？cos（0t）就是一个周期无限长的正弦波，也就是一条直线！所以在频域，0频率也被称为直流分量，在傅里叶级数的叠加中，它仅仅影响全部波形相对于数轴整体向上或是向下而不改变波的形状。</p>
+<p>接下来，让我们回到初中，回忆一下已经死去的八戒，啊不，已经死去的老师是怎么定义正弦波的吧。</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\81ca9447d6c45c162c2d76df75a6690a_1440w.jpg" alt="img"></p>
+<p>正弦波就是一个圆周运动在一条直线上的投影。所以频域的基本单元也可以理解为一个始终在旋转的圆</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\v2-841476e8e15e1d08114b65c50b741930_b.jpg" alt="img"></p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\v2-ff1caaa9486e8b7dbc22492405f6ae25_b.jpg" alt="img"></p>
+<p>知乎不能传动态图真是太让人惋惜了……</p>
+<p>点出去的朋友不要被wiki拐跑了，wiki写的哪有这里的文章这么没节操是不是。</p>
+<p>在此补上图片：</p>
+<p>介绍完了频域的基本组成单元，我们就可以看一看一个矩形波，在频域里的另一个模样了：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\e2e3c0af3bdbcba721c5415a4c65da9e_1440w.jpg" alt="img"></p>
+<p>这是什么奇怪的东西？</p>
+<p>这就是矩形波在频域的样子，是不是完全认不出来了？教科书一般就给到这里然后留给了读者无穷的遐想，以及无穷的吐槽，其实教科书只要补一张图就足够了：频域图像，也就是俗称的频谱，就是——</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\19679c871bd33d94e2fc8b174f0d14ab_1440w.jpg" alt="img"></p>
+<p>再清楚一点：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\40cf849e55ed95732a60b52d4019d609_1440w.jpg" alt="img"></p>
+<p>可以发现，在频谱中，偶数项的振幅都是0，也就对应了图中的彩色直线。振幅为0的正弦波。</p>
+<p>动图请戳：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\v2-38d2e076c57f6d3dd28749c77c89ed6e_b.jpg" alt="img"></p>
+<p>老实说，在我学傅里叶变换时，维基的这个图还没有出现，那时我就想到了这种表达方法，而且，后面还会加入维基没有表示出来的另一个谱——相位谱。</p>
+<p>但是在讲相位谱之前，我们先回顾一下刚刚的这个例子究竟意味着什么。记得前面说过的那句“世界是静止的”吗？估计好多人对这句话都已经吐槽半天了。想象一下，世界上每一个看似混乱的表象，实际都是一条时间轴上不规则的曲线，但实际这些曲线都是由这些无穷无尽的正弦波组成。我们看似不规律的事情反而是规律的正弦波在时域上的投影，而正弦波又是一个旋转的圆在直线上的投影。那么你的脑海中会产生一个什么画面呢？</p>
+<p>我们眼中的世界就像皮影戏的大幕布，幕布的后面有无数的齿轮，大齿轮带动小齿轮，小齿轮再带动更小的。在最外面的小齿轮上有一个小人——那就是我们自己。我们只看到这个小人毫无规律的在幕布前表演，却无法预测他下一步会去哪。而幕布后面的齿轮却永远一直那样不停的旋转，永不停歇。这样说来有些宿命论的感觉。说实话，这种对人生的描绘是我一个朋友在我们都是高中生的时候感叹的，当时想想似懂非懂，直到有一天我学到了傅里叶级数……</p>
+<h2 id="三、傅里叶级数（Fourier-Series）的相位谱"><a href="#三、傅里叶级数（Fourier-Series）的相位谱" class="headerlink" title="三、傅里叶级数（Fourier Series）的相位谱"></a>三、傅里叶级数（Fourier Series）的相位谱</h2><p>上一章的关键词是：从侧面看。这一章的关键词是：从下面看。</p>
+<p>在这一章最开始，我想先回答很多人的一个问题：傅里叶分析究竟是干什么用的？这段相对比较枯燥，已经知道了的同学可以直接跳到下一个分割线。</p>
+<p>先说一个最直接的用途。无论听广播还是看电视，我们一定对一个词不陌生——频道。频道频道，就是频率的通道，不同的频道就是将不同的频率作为一个通道来进行信息传输。下面大家尝试一件事：</p>
+<p>先在纸上画一个sin（x），不一定标准，意思差不多就行。不是很难吧。</p>
+<p>好，接下去画一个sin（3x）+sin（5x）的图形。</p>
+<p>别说标准不标准了，曲线什么时候上升什么时候下降你都不一定画的对吧？</p>
+<p>好，画不出来不要紧，我把sin（3x）+sin（5x）的曲线给你，但是前提是你不知道这个曲线的方程式，现在需要你把sin（5x）给我从图里拿出去，看看剩下的是什么。这基本是不可能做到的。</p>
+<p>但是在频域呢？则简单的很，无非就是几条竖线而已。</p>
+<p>所以很多在时域看似不可能做到的数学操作，在频域相反很容易。这就是需要傅里叶变换的地方。尤其是从某条曲线中去除一些特定的频率成分，这在工程上称为滤波，是信号处理最重要的概念之一，只有在频域才能轻松的做到。</p>
+<p>再说一个更重要，但是稍微复杂一点的用途——求解微分方程。（这段有点难度，看不懂的可以直接跳过这段）微分方程的重要性不用我过多介绍了。各行各业都用的到。但是求解微分方程却是一件相当麻烦的事情。因为除了要计算加减乘除，还要计算微分积分。而傅里叶变换则可以让微分和积分在频域中变为乘法和除法，大学数学瞬间变小学算术有没有。</p>
+<p>傅里叶分析当然还有其他更重要的用途，我们随着讲随着提。</p>
+<p>————————————————————————————————————</p>
+<p>下面我们继续说相位谱：</p>
+<p>通过时域到频域的变换，我们得到了一个从侧面看的频谱，但是这个频谱并没有包含时域中全部的信息。因为频谱只代表每一个对应的正弦波的振幅是多少，而没有提到相位。基础的正弦波A.sin(wt+θ)中，振幅，频率，相位缺一不可，不同相位决定了波的位置，所以对于频域分析，仅仅有频谱（振幅谱）是不够的，我们还需要一个相位谱。那么这个相位谱在哪呢？我们看下图，这次为了避免图片太混论，我们用7个波叠加的图。</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\07199fc0250791d768771b50c098e26a_1440w.jpg" alt="img"></p>
+<p>鉴于正弦波是周期的，我们需要设定一个用来标记正弦波位置的东西。在图中就是那些小红点。小红点是距离频率轴最近的波峰，而这个波峰所处的位置离频率轴有多远呢？为了看的更清楚，我们将红色的点投影到下平面，投影点我们用粉色点来表示。当然，这些粉色的点只标注了波峰距离频率轴的距离，并不是相位。</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\e1985fe86283a7b14d1fc7e11d322fcb_1440w.jpg" alt="img"></p>
+<p>这里需要纠正一个概念：时间差并不是相位差。如果将全部周期看作2Pi或者360度的话，相位差则是时间差在一个周期中所占的比例。我们将时间差除周期再乘2Pi，就得到了相位差。</p>
+<p>在完整的立体图中，我们将投影得到的时间差依次除以所在频率的周期，就得到了最下面的相位谱。所以，频谱是从侧面看，相位谱是从下面看。<strong>下次偷看女生裙底被发现的话，可以告诉她：“对不起，我只是想看看你的相位谱。”</strong></p>
+<p>注意到，相位谱中的相位除了0，就是Pi。因为cos（t+Pi）&#x3D;-cos（t），所以实际上相位为Pi的波只是上下翻转了而已。对于周期方波的傅里叶级数，这样的相位谱已经是很简单的了。另外值得注意的是，由于cos（t+2Pi）&#x3D;cos（t），所以相位差是周期的，pi和3pi，5pi，7pi都是相同的相位。人为定义相位谱的值域为(-pi，pi]，所以图中的相位差均为Pi。</p>
+<p>最后来一张大集合：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\4695ce06197677bab880cd55b6846f12_1440w.jpg" alt="img"></p>
+<h2 id="四、傅里叶变换（Fourier-Transformation）"><a href="#四、傅里叶变换（Fourier-Transformation）" class="headerlink" title="四、傅里叶变换（Fourier Transformation）"></a><strong>四、傅里叶变换（Fourier Transformation）</strong></h2><p>相信通过前面三章，大家对频域以及傅里叶级数都有了一个全新的认识。但是文章在一开始关于钢琴琴谱的例子我曾说过，这个栗子是一个公式错误，但是概念典型的例子。所谓的公式错误在哪里呢？</p>
+<p>傅里叶级数的本质是将一个周期的信号分解成无限多分开的（离散的）正弦波，但是宇宙似乎并不是周期的。曾经在学数字信号处理的时候写过一首打油诗：</p>
+<h2 id="往昔连续非周期，"><a href="#往昔连续非周期，" class="headerlink" title="往昔连续非周期，"></a>往昔连续非周期，</h2><h2 id="回忆周期不连续，"><a href="#回忆周期不连续，" class="headerlink" title="回忆周期不连续，"></a>回忆周期不连续，</h2><h2 id="任你ZT、DFT，"><a href="#任你ZT、DFT，" class="headerlink" title="任你ZT、DFT，"></a>任你ZT、DFT，</h2><h2 id="还原不回去。"><a href="#还原不回去。" class="headerlink" title="还原不回去。"></a>还原不回去。</h2><p>（请无视我渣一样的文学水平……）</p>
+<p>在这个世界上，有的事情一期一会，永不再来，并且时间始终不曾停息地将那些刻骨铭心的往昔连续的标记在时间点上。但是这些事情往往又成为了我们格外宝贵的回忆，在我们大脑里隔一段时间就会周期性的蹦出来一下，可惜这些回忆都是零散的片段，往往只有最幸福的回忆，而平淡的回忆则逐渐被我们忘却。因为，往昔是一个连续的非周期信号，而回忆是一个周期离散信号。</p>
+<p>是否有一种数学工具将连续非周期信号变换为周期离散信号呢？抱歉，真没有。</p>
+<p>比如傅里叶级数，在时域是一个周期且连续的函数，而在频域是一个非周期离散的函数。这句话比较绕嘴，实在看着费事可以干脆回忆第一章的图片。</p>
+<p>而在我们接下去要讲的傅里叶变换，则是将一个时域非周期的连续信号，转换为一个在频域非周期的连续信号。</p>
+<p>算了，还是上一张图方便大家理解吧：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\419cd0b2e965aca25d5f8a5a6362d728_1440w.jpg" alt="img"></p>
+<p>或者我们也可以换一个角度理解：傅里叶变换实际上是对一个周期无限大的函数进行傅里叶变换。</p>
+<p>所以说，钢琴谱其实并非一个连续的频谱，而是很多在时间上离散的频率，但是这样的一个贴切的比喻真的是很难找出第二个来了。</p>
+<p>因此在傅里叶变换在频域上就从离散谱变成了连续谱。那么连续谱是什么样子呢？</p>
+<h2 id="你见过大海么？"><a href="#你见过大海么？" class="headerlink" title="你见过大海么？"></a><strong>你见过大海么？</strong></h2><p>为了方便大家对比，我们这次从另一个角度来看频谱，还是傅里叶级数中用到最多的那幅图，我们从频率较高的方向看。</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\a185be412974fd73a7925cf1f1cc5372_1440w.jpg" alt="img"></p>
+<p>以上是离散谱，那么连续谱是什么样子呢？</p>
+<p>尽情的发挥你的想象，想象这些离散的正弦波离得越来越近，逐渐变得连续……</p>
+<p>直到变得像波涛起伏的大海：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\ece53f825c6de629befba3de12f929a7_1440w.jpg" alt="img"></p>
+<p>很抱歉，为了能让这些波浪更清晰的看到，我没有选用正确的计算参数，而是选择了一些让图片更美观的参数，不然这图看起来就像屎一样了。</p>
+<p>不过通过这样两幅图去比较，大家应该可以理解如何从离散谱变成了连续谱的了吧？原来离散谱的叠加，变成了连续谱的累积。所以在计算上也从求和符号变成了积分符号。</p>
+<p>不过，这个故事还没有讲完，接下去，我保证让你看到一幅比上图更美丽壮观的图片，但是这里需要介绍到一个数学工具才能然故事继续，这个工具就是——</p>
+<h2 id="五、宇宙耍帅第一公式：欧拉公式"><a href="#五、宇宙耍帅第一公式：欧拉公式" class="headerlink" title="五、宇宙耍帅第一公式：欧拉公式"></a>五、宇宙耍帅第一公式：欧拉公式</h2><p>虚数i这个概念大家在高中就接触过，但那时我们只知道它是-1的平方根，可是它真正的意义是什么呢?</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\42e1f6dc43e8868b4962f5ba389a5df4_1440w.jpg" alt="img"></p>
+<p>这里有一条数轴，在数轴上有一个红色的线段，它的长度是1。当它乘以3的时候，它的长度发生了变化，变成了蓝色的线段，而当它乘以-1的时候，就变成了绿色的线段，或者说线段在数轴上围绕原点旋转了180度。</p>
+<p>我们知道乘-1其实就是乘了两次 i使线段旋转了180度，那么乘一次 i 呢——答案很简单——旋转了90度。</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\3e88e9463e4667e50ebdda51dee88358_1440w.jpg" alt="img"></p>
+<p>同时，我们获得了一个垂直的虚数轴。实数轴与虚数轴共同构成了一个复数的平面，也称复平面。这样我们就了解到，乘虚数i的一个功能——旋转。</p>
+<p>现在，就有请宇宙第一耍帅公式欧拉公式隆重登场——</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\a5212ab9fd17c148a3b8762f982a37b2_1440w.jpg" alt="img"></p>
+<p>这个公式在数学领域的意义要远大于傅里叶分析，但是乘它为宇宙第一耍帅公式是因为它的特殊形式——当x等于Pi的时候。</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\57aabba66d545a26070989d3b5a864cd_1440w.jpg" alt="img"></p>
+<p>经常有理工科的学生为了跟妹子表现自己的学术功底，用这个公式来给妹子解释数学之美：”石榴姐你看，这个公式里既有自然底数e，自然数1和0，虚数i还有圆周率pi，它是这么简洁，这么美丽啊！“但是姑娘们心里往往只有一句话：”臭屌丝……“</p>
+<p>这个公式关键的作用，是将正弦波统一成了简单的指数形式。我们来看看图像上的涵义：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\974efc6a99e06dcd623193e960ccbe93_1440w.jpg" alt="img"></p>
+<p>欧拉公式所描绘的，是一个随着时间变化，在复平面上做圆周运动的点，随着时间的改变，在时间轴上就成了一条螺旋线。如果只看它的实数部分，也就是螺旋线在左侧的投影，就是一个最基础的余弦函数。而右侧的投影则是一个正弦函数。</p>
+<p>关于复数更深的理解，大家可以参考：</p>
+<p><a href="http://www.zhihu.com/question/23234701/answer/26017000">复数的物理意义是什么？</a></p>
+<p>这里不需要讲的太复杂，足够让大家理解后面的内容就可以了。</p>
+<h2 id="六、指数形式的傅里叶变换"><a href="#六、指数形式的傅里叶变换" class="headerlink" title="六、指数形式的傅里叶变换"></a><strong>六、指数形式的傅里叶变换</strong></h2><p>有了欧拉公式的帮助，我们便知道：<strong>正弦波的叠加</strong>，也可以理解为<strong>螺旋线的叠加</strong>在实数空间的投影。而螺旋线的叠加如果用一个形象的栗子来理解是什么呢？</p>
+<p><strong>光波</strong></p>
+<p>高中时我们就学过，自然光是由不同颜色的光叠加而成的，而最著名的实验就是牛顿师傅的三棱镜实验：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\c2d7bfc819ebcbea8d6f2c8271d4791d_1440w.jpg" alt="img"></p>
+<p>所以其实我们在很早就接触到了光的频谱，只是并没有了解频谱更重要的意义。</p>
+<p>但不同的是，傅里叶变换出来的频谱不仅仅是可见光这样频率范围有限的叠加，而是频率从0到无穷所有频率的组合。</p>
+<p>这里，我们可以用两种方法来理解正弦波：</p>
+<p>第一种前面已经讲过了，就是螺旋线在实轴的投影。</p>
+<p>另一种需要借助欧拉公式的另一种形式去理解：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\equationtex=e^{it}%3Dcos(t)%2Bi.sin(t)" alt="[公式]"></p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\equationtex=e^{-it}%3Dcos(t)-i.sin(t)" alt="[公式]"></p>
+<p>将以上两式相加再除2，得到：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\frac{e^{it}%2Be^{-it}}{2}+.svg+xml" alt="[公式]"></p>
+<p>这个式子可以怎么理解呢？</p>
+<p>我们刚才讲过，e^(it)可以理解为一条逆时针旋转的螺旋线，那么e^(-it)则可以理解为一条顺时针旋转的螺旋线。而cos(t)则是这两条旋转方向不同的螺旋线叠加的一半，因为这两条螺旋线的虚数部分相互抵消掉了！</p>
+<p>举个例子的话，就是极化方向不同的两束光波，磁场抵消，电场加倍。</p>
+<p>这里，逆时针旋转的我们称为正频率，而顺时针旋转的我们称为负频率（注意不是复频率）。</p>
+<p>好了，刚才我们已经看到了大海——连续的傅里叶变换频谱，现在想一想，连续的螺旋线会是什么样子：</p>
+<p>想象一下再往下翻：</p>
+<p>|</p>
+<p>|</p>
+<p>|</p>
+<p>|</p>
+<p>|</p>
+<p>|</p>
+<p>|</p>
+<p>|</p>
+<p>|</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\f116ae26859bdc80b28ea0f8f894ccc0_1440w.jpg" alt="img"></p>
+<p>是不是很漂亮？</p>
+<p>你猜猜，这个图形在时域是什么样子？</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\0fdfa0a9b6eea036703ab2499381080c_1440w.jpg" alt="img"></p>
+<p>哈哈，是不是觉得被狠狠扇了一个耳光。数学就是这么一个把简单的问题搞得很复杂的东西。</p>
+<p>顺便说一句，那个像大海螺一样的图，为了方便观看，我仅仅展示了其中正频率的部分，负频率的部分没有显示出来。</p>
+<p>如果你认真去看，海螺图上的每一条螺旋线都是可以清楚的看到的，每一条螺旋线都有着不同的振幅（旋转半径），频率（旋转周期）以及相位。而将所有螺旋线连成平面，就是这幅海螺图了。</p>
+<p>好了，讲到这里，相信大家对傅里叶变换以及傅里叶级数都有了一个形象的理解了，我们最后用一张图来总结一下：</p>
+<p><img src="/leiblog/thunderstorm2018/2026/06/16/%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%91%E5%9F%9F/blog\source\097c9051af221c171730d4bc8f436a72_1440w.jpg" alt="img"></p>
+<p>好了，傅里叶的故事终于讲完了，下面来讲讲我的故事：</p>
+<p>这篇文章第一次被写下来的地方你们绝对猜不到在哪，是在一张高数考试的卷子上。当时为了刷分，我重修了高数（上），但是后来时间紧压根没复习，所以我就抱着裸考的心态去了考场。但是到了考场我突然意识到，无论如何我都不会比上次考的更好了，所以干脆写一些自己对于数学的想法吧。于是用了一个小时左右的时间在试卷上洋洋洒洒写了本文的第一草稿。</p>
+<p>你们猜我的了多少分？</p>
+<p>6分</p>
+<p>没错，就是这个数字。而这6分的成绩是因为最后我实在无聊，把选择题全部填上了C，应该是中了两道，得到了这宝贵的6分。说真的，我很希望那张卷子还在，但是应该不太可能了。</p>
+<p>那么你们猜猜我第一次信号与系统考了多少分呢？</p>
+<p>45分</p>
+<p>没错，刚刚够参加补考的。但是我心一横没去考，决定重修。因为那个学期在忙其他事情，学习真的就抛在脑后了。但是我知道这是一门很重要的课，无论如何我要吃透它。说真的，信号与系统这门课几乎是大部分工科课程的基础，尤其是通信专业。</p>
+<p>在重修的过程中，我仔细分析了每一个公式，试图给这个公式以一个直观的理解。虽然我知道对于研究数学的人来说，这样的学习方法完全没有前途可言，因为随着概念愈加抽象，维度越来越高，这种图像或者模型理解法将完全丧失作用。但是对于一个工科生来说，足够了。</p>
+<p>后来来了德国，这边学校要求我重修信号与系统时，我彻底无语了。但是没办法，德国人有时对中国人就是有种藐视，觉得你的教育不靠谱。所以没办法，再来一遍吧。</p>
+<p>这次，我考了满分，而及格率只有一半。</p>
+<p>老实说，数学工具对于工科生和对于理科生来说，意义是完全不同的。工科生只要理解了，会用，会查，就足够了。但是很多高校却将这些重要的数学课程教给数学系的老师去教。这样就出现一个问题，数学老师讲得天花乱坠，又是推理又是证明，但是学生心里就只有一句话：学这货到底干嘛用的？</p>
+<p>缺少了目标的教育是彻底的失败。</p>
+<p>在开始学习一门数学工具的时候，学生完全不知道这个工具的作用，现实涵义。而教材上有只有晦涩难懂，定语就二十几个字的概念以及看了就眼晕的公式。能学出兴趣来就怪了！</p>
+<p>好在我很幸运，遇到了大连海事大学的吴楠老师。他的课全程来看是两条线索，一条从上而下，一条从下而上。先讲本门课程的意义，然后指出这门课程中会遇到哪样的问题，让学生知道自己学习的某种知识在现实中扮演的角色。然后再从基础讲起，梳理知识树，直到延伸到另一条线索中提出的问题，完美的衔接在一起！</p>
+<p>这样的教学模式，我想才是大学里应该出现的。</p>
+<p>最后，写给所有给我点赞并留言的同学。真的谢谢大家的支持，也很抱歉不能一一回复。因为知乎专栏的留言要逐次加载，为了看到最后一条要点很多次加载。当然我都坚持看完了，只是没办法一一回复。</p>
+<p>本文只是介绍了一种对傅里叶分析新颖的理解方法，对于求学，还是要踏踏实实弄清楚公式和概念，学习，真的没有捷径。但至少通过本文，我希望可以让这条漫长的路变得有意思一些。</p>
+<p>最后，祝大家都能在学习中找到乐趣。…</p>
+]]></content>
+      <categories>
+        <category>理论学习</category>
+      </categories>
+      <tags>
+        <tag>信号处理</tag>
+        <tag>傅里叶分析</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Python学习</title>
+    <url>/leiblog/2024/04/13/Python%E5%AD%A6%E4%B9%A0/</url>
+    <content><![CDATA[<blockquote>
+<p>主要差异：</p>
+<p>①Python <em><strong>支持多种数据类型</strong></em> ，在计算机内部，可以把任何数据都看成一个“对象”，而变量就是在程序中用来指向这些数据对象的，对变量赋值就是把数据和变量给关联起来。</p>
+<p>②Python <em>确定块范围</em> 是用 <em><strong>换行格式</strong></em> 来进行标识的</p>
+<p>③Python的整数没有大小限制；浮点数也没有大小限制，但是超出一定范围就直接表示为<code>inf</code>（无限大）。</p>
+</blockquote>
+<h1 id="语法学习"><a href="#语法学习" class="headerlink" title="语法学习"></a>语法学习</h1><h3 id="常见类型"><a href="#常见类型" class="headerlink" title="常见类型"></a>常见类型</h3><blockquote>
+<p>基本的类型之间均可以相互转化：<code>int()</code>、<code>float()</code>、<code>str()</code></p>
+<p>而函数 <code>type()</code> 则可以获取变量的类型</p>
+<p><code>isinstance(a,b)</code> 则能比较变量a、变量b是否为同一类型的变量，并返回一个布尔类型值</p>
+</blockquote>
+<h4 id="字符串"><a href="#字符串" class="headerlink" title="字符串"></a>字符串</h4><p>字符串以单引号 <code>&#39;</code> 或双引号 <code>&quot;</code> 括起来的任意文本，比如 <code>&#39;abc&#39;</code> ， <code>&quot;xyz&quot;</code> 都是可行的表示方式。</p>
+<p><code>&#39;&#39;</code> 或 <code>&quot;&quot;</code> 本身只是一种表示方式，不是字符串的一部分，因此，字符串<code>&#39;abc&#39;</code>只有<code>a</code>，<code>b</code>，<code>c</code>这3个字符。如果 <code>&#39;</code> 本身也是一个字符，那就可以用 <code>&quot;&quot;</code> 括起来，比如 <code>&quot;I&#39;m OK&quot;</code> 包含的字符是 <code>I</code> ， <code>&#39;</code> ， <code>m</code> ，空格， <code>O</code> ，<code>K</code> 这6个字符。</p>
+<p>如果字符串内部既包含 <code>&#39;</code> 又包含 <code>&quot;</code> ，可以用转义字符 <code>\</code> 来标识，比如：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="string">&#x27;I\&#x27;m \&quot;OK\&quot;!&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>表示的字符串内容是：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">I<span class="string">&#x27;m &quot;OK&quot;!</span></span><br></pre></td></tr></table></figure>
+
+<p>和其他语言的语法一致：转义字符 <code>\</code> 可以转义很多字符，比如 <code>\n</code> 表示换行， <code>\t</code> 表示制表符，字符 <code>\</code> 本身也要转义，所以 <code>\\</code> 表示的字符就是 <code>\</code></p>
+<blockquote>
+<p>但如果字符串里面有很多字符都需要转义，就需要加很多 <code>\</code> ，为了简化，Python还允许用 <code>r&#39;&#39;</code> 表示 <code>&#39;&#39;</code> 内部的字符串默认不转义。</p>
+</blockquote>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">print</span>(<span class="string">&#x27;I\&#x27;m working\nPython.&#x27;</span>)</span><br><span class="line">I<span class="string">&#x27;m working</span></span><br><span class="line"><span class="string">Python.</span></span><br></pre></td></tr></table></figure>
+
+<p>如果字符串内部有很多换行，为了方便，也可以用<code>&#39;&#39;&#39;...&#39;&#39;&#39;</code>的格式表示多行内容：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">print</span>(<span class="string">&#x27;&#x27;&#x27;line1</span></span><br><span class="line"><span class="string">line2</span></span><br><span class="line"><span class="string">line3&#x27;&#x27;&#x27;</span>)</span><br><span class="line"></span><br><span class="line">line1</span><br><span class="line">line2</span><br><span class="line">line3</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>多行字符串<code>&#39;&#39;&#39;...&#39;&#39;&#39;</code>还可以在前面加上<code>r</code>使用:</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="built_in">print</span>(<span class="string">r&#x27;&#x27;&#x27;hello,\n</span></span><br><span class="line"><span class="string">world&#x27;&#x27;&#x27;</span>)</span><br><span class="line"></span><br><span class="line">hello,\n</span><br><span class="line">world</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h4 id="布尔值"><a href="#布尔值" class="headerlink" title="布尔值"></a>布尔值</h4><p>一个布尔值只有<code>True</code>、<code>False</code>两种值，要么是<code>True</code>，要么是<code>False</code>，在Python中，可以直接用 <code>True</code> 、 <code>False</code> 表示布尔值（请注意大小写必须正确）</p>
+<p>布尔值可以用 <code>and</code> 、<code>or</code> 和 <code>not</code> 运算。</p>
+<h3 id="特殊类型"><a href="#特殊类型" class="headerlink" title="特殊类型"></a>特殊类型</h3><blockquote>
+<p>在Python中，有两种除法，一种除法是 <code>/</code> ：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="number">10</span> / <span class="number">3</span></span><br><span class="line"><span class="number">3.3333333333333335</span></span><br></pre></td></tr></table></figure>
+
+<p><code>/</code>除法计算结果是浮点数，即使是两个整数恰好整除，结果也是浮点数：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="number">9</span> / <span class="number">3</span></span><br><span class="line"><span class="number">3.0</span></span><br></pre></td></tr></table></figure>
+
+<p>还有一种除法是 <code>//</code> ，称为地板除，两个整数的除法仍然是整数：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="number">10</span> // <span class="number">3</span></span><br><span class="line"><span class="number">3</span></span><br></pre></td></tr></table></figure>
+
+<p>整数的地板除 <code>//</code> 永远是整数，即使除不尽。</p>
+<p>【要做精确的除法，就必须要使用 <code>/</code> 】</p>
+<p>因为 <code>//</code> 除法只取结果的整数部分，所以Python还提供一个余数运算，可以得到两个整数相除的余数：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="number">10</span> % <span class="number">3</span></span><br><span class="line"><span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>无论整数做 <code>//</code> 除法还是取余数，结果永远是整数，所以，python中整数运算结果永远是精确的。</p>
+</blockquote>
+<h4 id="空值"><a href="#空值" class="headerlink" title="空值"></a>空值</h4><p>空值是Python里一个特殊的值，用 <strong><code>None</code></strong> 表示。 <code>None</code> 不能理解为<code>0</code>，因为 <code>0</code> 是有意义的，而 <code>None</code> 是一个特殊的空值。</p>
+<h4 id="变量"><a href="#变量" class="headerlink" title="变量"></a>变量</h4><p>在Python中，等号 <code>=</code> 可以把任意数据类型赋值给变量，同一个变量不仅可以反复赋值，而且可以赋值给不同类型的变量，例如：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">a = <span class="number">12</span> <span class="comment"># a是整数</span></span><br><span class="line"><span class="built_in">print</span>(a)</span><br><span class="line">a = <span class="string">&#x27;BC&#x27;</span> <span class="comment"># a变为字符串</span></span><br><span class="line"><span class="built_in">print</span>(a)</span><br><span class="line"></span><br><span class="line"><span class="number">12</span></span><br><span class="line">BC</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>这种变量本身类型不固定的语言是 <em>动态语言</em> ，而java、c++等就是 <em>静态语言</em> 。</p>
+<p>静态语言在定义变量时必须指定变量类型，如果赋值的时候类型不匹配，就会报错。</p>
+</blockquote>
+<h1 id="字符解析"><a href="#字符解析" class="headerlink" title="字符解析"></a>字符解析</h1><h3 id="ASCII、Unicode和UTF-8的关系"><a href="#ASCII、Unicode和UTF-8的关系" class="headerlink" title="ASCII、Unicode和UTF-8的关系"></a>ASCII、Unicode和UTF-8的关系</h3><p>在计算机内存中，统一使用Unicode编码，当需要保存到硬盘或者需要传输的时候，就转换为UTF-8编码。</p>
+<p>用记事本编辑的时候，从文件读取的UTF-8字符被转换为Unicode字符到内存里，编辑完成后，保存的时候再把Unicode转换为UTF-8保存到文件：</p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240414111741935.png" alt="image-20240414111741935"></p>
+<p>而在浏览网页的时候，服务器会把动态生成的Unicode内容转换为UTF-8再传输到浏览器：</p>
+<p><img src="https://skyme-1307417630.cos.ap-chengdu.myqcloud.com/image-20240414111832809.png" alt="image-20240414111832809"></p>
+<p>很多网页的源码上【浏览器上按F12即可查看】会有类似 <code>&lt;meta charset=&quot;UTF-8&quot; /&gt;</code> 的信息，表示该网页正是用的UTF-8编码。</p>
+<h3 id="BIF方法"><a href="#BIF方法" class="headerlink" title="BIF方法"></a>BIF方法</h3><blockquote>
+<p>注：BIF，即built-in functions，内建函数。</p>
+</blockquote>
+<p>对于单个字符的编码，Python提供 <code>ord()</code> 函数获取字符的整数表示，<code>chr()</code>函数能把编码转换为对应的字符：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">ord</span>(<span class="string">&#x27;A&#x27;</span>)</span><br><span class="line"><span class="number">65</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">ord</span>(<span class="string">&#x27;中&#x27;</span>)</span><br><span class="line"><span class="number">20013</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">chr</span>(<span class="number">66</span>)</span><br><span class="line"><span class="string">&#x27;B&#x27;</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">chr</span>(<span class="number">25991</span>)</span><br><span class="line"><span class="string">&#x27;文&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>如果知道字符的整数编码，还可用十六进制：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="string">&#x27;\u4e2d\u6587&#x27;</span></span><br><span class="line"><span class="string">&#x27;中文&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>由于Python的字符串类型是 <code>str</code> ，在内存中以Unicode表示，一个字符对应若干个字节。</p>
+<p>但如果要在网络上传输，或者保存到磁盘上，就需要把<code>str</code>变为以字节为单位的 <code>bytes</code> 。</p>
+<blockquote>
+<p>Python对<code>bytes</code>类型的数据用带<code>b</code>前缀的单引号或双引号表示，如：x &#x3D; b ‘ABC’</p>
+</blockquote>
+<p>以Unicode表示的 <code>str</code> 通过 <code>encode()</code> 方法可以编码为指定的 <code>bytes</code></p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="string">&#x27;ABC&#x27;</span>.encode(<span class="string">&#x27;ascii&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>反过来，如果我们从网络或磁盘上读取了字节流，那么读到的数据就是 <code>bytes</code> 。要把 <code>bytes</code> 变为 <code>str</code> ，就需要用 <code>decode()</code> 方法</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="string">b&#x27;ABC&#x27;</span>.decode(<span class="string">&#x27;ascii&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>在操作字符串时，由于我们经常遇到 <code>str</code> 和 <code>bytes</code> 的互相转换。</p>
+<p>为了避免乱码问题，我们应该始终使用 <em><strong>UTF-8编码</strong></em> 对 <code>str</code> 和 <code>bytes</code> 进行转换。</p>
+<p>由于Python源代码也是一个文本文件，<strong>所以当源代码中包含中文时</strong>，保存源代码的时候就需要<strong>指定保存为UTF-8编码</strong>。</p>
+<p>当 <em>Python解释器</em> 读取源代码时，为了让它 <em><strong>按照UTF-8编码读取</strong></em> ，我们通常在文件开头写上这两行：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env python3</span></span><br><span class="line"><span class="comment"># -*- coding: utf-8 -*-</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>第一行注释：告诉Linux&#x2F;OS X系统，这是一个Python可执行程序，Windows系统会忽略这个注释；</p>
+<p>第二行注释：告诉Python解释器，按照UTF-8编码读取源代码，否则，在源代码中写的中文输出可能会有乱码；</p>
+<p>申明了UTF-8编码并不意味着 <code>.py</code> 文件就是UTF-8编码的，必须并且要<em>确保文本编辑器正在使用 UTF-8 without BOM编码</em> ； </p>
+<p>如果 <code>.py</code> 文件本身使用UTF-8编码，并且也申明了 <code># -*- coding: utf-8 -*-</code> ，打开命令提示符测试就能正常显示中文</p>
+</blockquote>
+]]></content>
+      <tags>
+        <tag>Python</tag>
       </tags>
   </entry>
   <entry>
@@ -3888,7 +5366,7 @@
   </entry>
   <entry>
     <title>Wlcome to my blog</title>
-    <url>/leiblog/2022/11/30/hello-world/</url>
+    <url>/leiblog/1970/01/01/hello-world/</url>
     <content><![CDATA[<p>博客作为一种古老的记录的形式，是一代人的记忆，但同时也是开发者的福音。</p>
 <h3 id="基于Hexo框架"><a href="#基于Hexo框架" class="headerlink" title="基于Hexo框架"></a>基于Hexo框架</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">简化搭建过程</span><br></pre></td></tr></table></figure>
 
